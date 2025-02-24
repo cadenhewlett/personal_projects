@@ -1,0 +1,193 @@
+---
+title: "Modelling Heteroskedasticity"
+author: "Caden Hewlett"
+format: pdf
+header-includes:
+   - \usepackage{bbm}
+editor: visual
+---
+
+## Introduction
+
+...
+
+## Example: Simulation
+
+Here, we establish the ground truth relation between $x$ and $y$ and aim to see if we can recover it. Specifically, the true relation is $y_i = 3x - 4 + \varepsilon_i$, where $\varepsilon_i \sim N(0, 6 + \frac{3}{2}x_i)$ . Below, we fit a classical frequentist simple linear regression, which has an evident pattern in the residual plots.
+
+```{r}
+#| message: false
+#| warning: false
+#| echo: false
+#| fig-width: 9
+library(tidyverse)
+library(lmtest)
+suppressPackageStartupMessages(require(rstan))
+set.seed(1928)
+par(mfrow = c(1, 2))
+df <- read.csv("C:/Users/thetr/OneDrive/Desktop/Work/TA_STAT_200/pokedex.csv")
+# generate heteroskedastic data
+x <- rnorm(100, mean = 0, sd = 1)
+y <- 3*x - 4 + rnorm(100, mean = 0, sd = 6 + 1.5*x)
+# look at the model
+plot(x, y, main = "Data With Heteroskedasticity")
+# try a frequentist fit
+model <- lm(y~x, data = data.frame(x, y))
+# notice the bad residuals
+plot(x, model$residuals)
+abline(h = 0, col = 'red')
+
+```
+
+## Breusch-Pagan Test
+
+We now conduct a Breusch-Pagan test to verify the heteroskedasticity. Let $\hat{\varepsilon}_i$ be the $i$-th estimated residual from the model. Recall by maximum likelihood estimation, $\hat{\sigma}^2 = \frac{\text{RSS}}{n} = \dfrac{\sum_{i =  1}^n \varepsilon_i}{n}$ . We thus define $g_i = \hat{\varepsilon_i}^2 / \hat{\sigma}^2$ and fit the linear model $g_i = \gamma_0 + \gamma_1 x_i + \eta_i$. Then, from this model, the test statistic is given as follows $T_{\text{BP}} = \frac{1}{2}\big(\text{TSS} - \text{RSS}) = \frac{1}{2} \big( \sum_{i = 1}^n (g_i - \bar{g})^2 - \sum_{i = 1}^n(g_i - \hat{g}_i)^2 \big)$ and is asymptotically $\chi^2_{p}$ where $p$ is the number of predictor variables (use $p - 1$ if considering the intercept as a predictor 'variable.') The null hypothesis is that there is no evidence of heteroskedasticity in the data.
+
+```{r}
+#| echo: false
+#| message: false
+n <- length(y)
+# extract residuals
+e_i <- model$residuals
+# estimate sigma
+sigma_hat <- sum(e_i^2)/n
+# compute g_i
+g_i <- (e_i^2)/sigma_hat
+bp_mod <-  lm(g_i ~ x, data = data.frame(x, g_i)) 
+# compute RSS and TSS
+RSS_bp <- sum(bp_mod$residuals^2)
+TSS_bp <- sum( (g_i - mean(g_i))^2  )
+bp_stat <- 0.5*(TSS_bp-RSS_bp)
+# then, compute the p-value
+p_bp <- pchisq(bp_stat, lower.tail = FALSE, df = 2 - 1)
+# bptest(model, studentize = FALSE)
+cat(paste("Breusch-Pagan p-value:", round(p_bp, digits = 6)) )
+```
+
+The Breusch-Pagan test is correctly identifying heteroskedasticity at $\alpha = 0.05$. The question becomes... how can we use the Bayesian framework to capture this relationship?
+
+## Hierarchical Model
+
+We adopt the framework of Bayesian Normal regression; however, we attempt to paramaterize $\sigma$ as well. We place a somewhat-sparse hyperprior $\varsigma_i$ on the standard deviation of each normally-distributed covariate $\{\gamma_0, \gamma_1, \beta_0, \beta_1 \}$. $$
+\begin{aligned}
+\{\varsigma_{\ell}\}_{\ell = 0}^3 &\sim \text{Exp}(0.1) \\
+\{\gamma_j\}_{j = 0}^1 &\sim N(0, \varsigma^2_{j}) \\
+\{\beta_j\}_{j = 0}^1 &\sim N(0, \varsigma^2_{j+2}) \\
+\mu_i &= \beta_0 + \beta_1 x_i \\
+\sigma^2_i &= \exp(\gamma_0 + \gamma_1 x_i) \\
+y_i \mid x_i &\sim N(\mu_i, \sigma^2_i) 
+\end{aligned}
+$$ We implement the above in Stan, below:
+
+```{stan output.var = "mod_b", eval = FALSE}
+
+data {
+  int<lower=1> n;          
+  vector[n] x;             
+  vector[n] y;             
+}
+
+parameters { 
+  // hyper-prior
+  real<lower=0> s_0;
+  real<lower=0> s_1;
+  real<lower=0> s_2;
+  real<lower=0> s_3;
+  
+  // coefficients for mean
+  real b_0;
+  real b_1;
+
+  // coefficients for log-variance
+  real g_0;
+  real g_1;
+}
+
+
+model {
+  // --------------- //
+  // - Hyperpriors - //
+  // --------------- //
+  s_0 ~ exponential(1);
+  s_1 ~ exponential(1);
+  s_2 ~ exponential(1);
+  s_3 ~ exponential(1);
+  // ------------ //
+  // --- Mean --- //
+  // ------------ //
+  b_0 ~ normal(0, s_0);
+  b_1 ~ normal(0, s_1);
+  // ---------------- //
+  // - Log-Variance - //
+  // ---------------- //
+  s_0 ~ normal(0, s_2);
+  s_1 ~ normal(0, s_3);
+  // -------------- //
+  // - Likelihood - //
+  // -------------- //
+  for (i in 1:n) {
+    // mean
+    real mu_i = b_0 + b_1 * x[i];
+    // sigma = exp( (g_0 + g_1*x[i]) / 2 )
+    real sigma_i = exp(0.5 * (g_0 + g_1 * x[i]));
+    // normal likelihood
+    y[i] ~ normal(mu_i, sigma_i);
+  }
+}
+```
+
+Now that we have defined the model, we run the MCMC and extract the fit.
+
+```{r run_mod, include=FALSE, eval = FALSE}
+#| message: false
+#| warning: false
+#| results: false
+#| dependson: knitr::dep_prev()
+
+
+fit <- sampling(
+  mod_b, 
+  seed = 1928,
+  data = list(n = n, x = x, y = y),
+  chains = 4, 
+  iter = 2000,   
+  warmup = 1000
+)
+
+model_b <- extract(fit)
+```
+
+```{r}
+fit <- readRDS("mod_b.rds")
+model_b <- rstan::extract(fit)
+```
+
+```{r}
+# mean parameters
+b_0 <- model_b$b_0
+b_1 <- model_b$b_1
+# variance parameters
+g_0 <- model_b$g_0
+g_1 <- model_b$g_1
+
+# regression means
+mu_post <- outer(b_0, rep(1, length(x)), "+") + outer(b_1, x, "*")
+# regression variance
+sigma_post <- exp(0.5 * (outer(g_0, rep(1, length(x)), "+") + outer(g_1, x, "*")))
+# posterior means
+mu_mean <- colMeans(mu_post)
+sigma_mean <- colMeans(sigma_post)
+
+# credible intervals
+mu_lower <- apply(mu_post, 2, quantile, probs = 0.025)
+mu_upper <- apply(mu_post, 2, quantile, probs = 0.975)
+
+# estimated predictive intervals 
+y_lower <- mu_mean - 1.96 * sigma_mean  
+y_upper <- mu_mean + 1.96 * sigma_mean
+# plot it
+plot(x, y, ylim = c(-30,30))
+lines(x, y_lower, col = 'red')
+lines(x, y_upper, col = 'red')
+lines(x, mu_mean, col = 'red', lty = 'dotted')
+```
