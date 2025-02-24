@@ -8,9 +8,23 @@ function psoptim(par, fn::Function, lower = -1, upper = 1; kwargs... )
     # -- Default Param -- #
     # ------------------- #
     default_controls = Dict(
-        :control1 => 100,
-        :control2 => 200,
-        :control3 => 300
+        :trace => 0,
+        :fnscale => 1,
+        :maxit => 1000,
+        :maxf => Inf,
+        :abstol => -Inf,
+        :reltol => 0,
+        :report => 10,
+        :s => nothing,
+        :k => 3
+        :p => nothing,
+        :w => 1 / (2 * log(2)),
+        :c.p => 0.5 + log(2),
+        :c.g => 0.5 + log(2),
+        :c.decay => "None",
+        :d => missing,
+        :v.max => missing,
+        :rand.order => true
     )
     # extract default control variable names
     con_keys = keys(default_controls)
