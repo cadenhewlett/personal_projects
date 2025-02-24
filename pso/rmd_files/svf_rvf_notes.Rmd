@@ -1,0 +1,61 @@
+---
+title: "SVFs and GVFs in PSO"
+author: "Caden Hewlett"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Slowly-Varying Functions
+
+A function $\ell(x)$ is said to be a Slowly Varying Function (SVF) as $x \rightarrow \infty$ if for any constant $c > 0$
+$$
+\lim_{x \rightarrow \infty} \Big( \dfrac{\ell(cx)}{\ell(x)}\Big) =1 
+$$
+The authors (link) use $\ell(x) = ( 10 \ln(x) )^{\alpha}$. We can verify that $\ell$ is an SVF as follows:
+$$
+\begin{aligned}
+\lim_{x \rightarrow \infty} \Big( \dfrac{\ell(cx)}{\ell(x)}\Big) &= \lim_{x \rightarrow \infty} \Big( \dfrac{10^{\alpha} \ln (cx)^{\alpha}}{10^{\alpha} \ln (x)^{\alpha}}\Big) \\
+\lim_{x \rightarrow \infty} \Big( \dfrac{\ell(cx)}{\ell(x)}\Big) &= \lim_{x \rightarrow \infty} \Big( \dfrac{\ln(x)^{\alpha}+\ln (c)^{\alpha}}{ \ln (x)^{\alpha}}\Big)
+\\
+\lim_{x \rightarrow \infty} \Big( \dfrac{\ell(cx)}{\ell(x)}\Big) &\overset{x \text{ dominates}}{=} \lim_{x \rightarrow \infty} \Big( \dfrac{\ln(x)^{\alpha}}{ \ln (x)^{\alpha}}\Big) = \boxed{1}
+\end{aligned}
+$$
+
+## Regular-Varying Functions (RVF)
+
+A Regular Varying Function (RVF) is one that behaves like a power of $x$, meaning that it grows at a regular rate as $x$ increases. Mathematically, a function $f(x)$ is regularly varying if it satisfies:
+$$
+\lim_{x \rightarrow \infty} \Big( \dfrac{f(cx)}{f(x)}\Big) = c^{\delta} 
+$$
+For some constant $\delta$.The authors let $L(x) = x^{\delta} \ell(x)$ as an RVF. 
+This makes sense as an RVF because multiplying an SVF by $x^{\delta}$ transforms the slowly varying function into one that grows or shrinks at a regular rate. The control parameter $\delta$ lets you fine-tune this behavior to promote faster or slower convergence depending on the stage of the optimization process.
+
+## In Update Equations
+
+The SVF $\ell(x)$ and RVF $L(x)$ are used in the PSO Update Equations based on $t$. For small $t$, the RVF is used to perturb the $\mathbf{X}$-values as follows:
+$$
+\mathbf{X}_{t + 1}^{(i)} = \begin{cases} \mathbf{X}_t^{(i)}  + \mathbf{V}_t^{(i)} + \text{RVF}(\mathbf{X}_t^{(i)}), & \text{ if } t \leq \lceil\rho T\rfloor \\
+\mathbf{X}_t^{(i)}  + \mathbf{V}_t^{(i)} + \text{SVF}(\mathbf{X}_t^{(i)}), & \text{ otherwise}\end{cases}
+$$
+Where $t$ is the current iteration, $T$ is the max iteration and $\rho$ is a control parameter dictating when the update perturbations switch from RVF to SVF.
+
+
+## Implementation:
+
+```{r}
+SVF <- function(x, alpha = 0.25){
+  return((10 * log(x))^(alpha))
+}
+x = seq(from = 1, to = 10, length.out = 1000)
+plot( SVF(x), type = 'l', ylim = c(0, 7) )
+
+RVF <- function(x, delta = 0.5){
+  return( x^(delta)*SVF(x))
+}
+
+lines( RVF(x) , col = 'red')
+```

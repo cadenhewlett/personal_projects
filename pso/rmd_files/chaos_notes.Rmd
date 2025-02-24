@@ -1,0 +1,179 @@
+---
+title: "Chaotic Functions"
+author: "Caden Hewlett"
+date: "`r Sys.Date()`"
+output: pdf_document
+header-includes:
+  - \usepackage{amsmath}
+  - \usepackage{graphicx}
+  - \usepackage{hyperref}
+  - \usepackage{bbm}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Logistic Map
+
+The Logistic Map depends on the parameter $r$, which controls the behaviour of the system and ranges between $0$ and $4$. 
+
+
+For $r \in [0, 1)$ the population will eventually die out, i.e. $x_n \rightarrow 0$. For $r \in [1, 3)$ the system stabilizes to a fixed point dependent on $r$, and for $r \in [3, \approx 3.57]$ the system exhibits period-doubling bifuractions between two points. Finally, for $r \in [3.57, 4]$ the system is chaotic and the values of $x_n$ are highly dependent on the initial condition $x_0$. 
+
+The general evolution of a logistic map is given by:
+
+$$
+x_{n + 1} = r \cdot x_n \cdot (1 - x_n), \text{ where } r \in [0, 4] \text{ and } x_0 \in \mathbb{R}
+$$
+
+Below is a plot of a logistic map, with $x_0 = 0.15$ and $r = 3.9$.
+
+```{r, fig.width = 9, echo = F}
+library(scatterplot3d)
+logistic_map <- function(r,
+                              x_0,
+                              n_iter = 100,
+                              ...) {
+  # r: the parameter controlling the behavior of the map
+  # x_0: the initial value of x
+  # n_iter: number of iterations to compute
+  # discard: number of initial iterations to discard for better visualization
+  
+  # Initialize the vector to store the values of x
+  x_values <- numeric(n_iter)
+  x_values[1] <- x_0
+  
+  # Generate the sequence using the Logistic Map equation
+  for (i in 2:n_iter) {
+    x_values[i] <- r * x_values[i - 1] * (1 - x_values[i - 1])
+  }
+  
+  # Discard the first few iterations to allow the system to settle
+  x_values <- x_values[1:n_iter]
+  # Plot the logistic map
+  return(x_values)
+  
+}
+n <- 100
+vals <- logistic_map (
+  r = 3.9,
+  x_0 = 0.15,
+  n_iter = n)
+
+x_t <- vals[1:(n-2)]
+x_t1 <- vals[2:(n-1)]
+x_t2 <- vals[3:(n)]
+
+# Plot the results
+scatterplot3d(x_t, x_t1, x_t2, type = "p", color = "blue", lwd = 0.5, 
+              main = "Poincare Plot of Logistic Map", xlab = "X[ t ]", ylab = "X[ t + 1 ]", zlab = "X[ t + 2]")
+```
+
+## Henon Map
+
+A Henon Map is a two-dimensional discrete time chaotic system that can produce strange attractors. It was developed in 1976 as a simplified model of the Poincaré section of the Lorenz system. 
+
+It is defined by state variables $x_n$ and $y_n$ alongside real-valued coefficients $a$ and $b$, in the system below.
+
+$$
+\begin{aligned}
+x_{n + 1} &= 1 - a \cdot x_n^2 + y_n \\
+y_{n + 1} &= b \cdot x_n
+\end{aligned}
+$$
+Like all of these systems, the Henon Map evolves iteratively, i.e. with $(x_0, y_0)$ you can compute $(x_1, y_1)$, etc. Critically, the squaring of $x_n$ in line one introduces nonlinearity in the evolution that tends to chaotic behaviour and strong dependence on the initial conditions. 
+
+For the standard initialization $a = 1.4$ and $b = 0.3$, the system is chaotic and does not settle into a cycle but instead a **strange attractor**. 
+
+In dynamic systems, an attractor is a set of states that the system tends towards over time. This can be a fixed point attractor $S = \{(x^{\star}, y^{\star})\}$. Alternatively, it can be a limit **cycle attractor**, wherein the system settles into a periodic orbit dictated by some function, i.e. $S = \{\big(x(t), y(t) \big) \mid t \in T\}$ where $T$ is the period (i.e. past discrete time $T$ the cycle repeats.) The system can also form a **torus attractor** which is quasi-periodic and forms a donut-like shape without ever exactly repeating. Finally, a **strange attractor** tends to a fractal structure that is non-periodic. The system never follows a periodic or repeating cycle, insead following some complex pattern appearing random (but is actually determined by the initial conditions.)
+
+Below is a plot of a Henon Map forming a Strange Attractor in $\mathbb{R}^2$, with $x_0 = y_0 = 0$.
+
+```{r henon, echo = F}
+henon_map <- function(a, b, x0, y0, n_iter) {
+  # a, b: parameters of the Hénon Map
+  # x0, y0: initial values of x and y
+  # n_iter: number of iterations to run
+  
+  # Initialize vectors to store the results
+  x <- numeric(n_iter)
+  y <- numeric(n_iter)
+  
+  # Set initial values
+  x[1] <- x0
+  y[1] <- y0
+  
+  # Iterate the Hénon Map
+  for (i in 2:n_iter) {
+    x[i] <- 1 - a * x[i - 1]^2 + y[i - 1]
+    y[i] <- b * x[i - 1]
+  }
+  
+  return(data.frame(x, y))
+}
+
+# Generate the Henon Map data
+henon_data <- henon_map(a = 1.4, b = 0.3, x0 = 0, y0 = 0, n_iter = 10000)
+plot(henon_data$x, henon_data$y, col = "blue", pch = '.',
+     main = "Hénon Map - Strange Attractor", xlab = "x", ylab = "y")
+```
+
+\newpage
+
+## Lorenz System
+
+The Lorenz System is a set of three non-linear differential equations introduced by Edward Lorenz in 1963. 
+
+The System is defined by the following ODEs.
+
+$$
+\begin{aligned}
+\dfrac{\text{d}x}{\text{d}t} &= \varsigma(y - x) \\
+\dfrac{\text{d}y}{\text{d}t} &= x(\rho - z) - y \\
+\dfrac{\text{d}z}{\text{d}t} &= xy - \beta z
+\end{aligned}
+$$
+Where $x$, $y$, $z$ are the variables that evolve over time, and $\varsigma$, $\rho$ and $\beta$ define the behaviour.
+
+The first coefficient, $\varsigma$, is known as the Prandtl number. It is related to the viscosity of the fluid. The second coefficeint, $\rho$, is the Rayleigh number. It is related to the temperature difference controlling the convection. Finally $\beta$ is the geometric factor of the series. 
+
+The first equation controls how $x$ evolves over time. In a physical sense, it represents the rate of change of the convective velocity, where $\varsigma$ controls the sensitivity of the system to the difference between $y$ and $x$. The second equation describes the change in $y$ over time, by combination of convection through $x$ and cooling through $y$. Finally, the third equation governs the evolution of $z$, which is related to the heat transfer ($xy$) and the dissipation $\beta z$.
+
+Below is a plot of the system with $\varsigma = 10$, $\rho = 28$,  $\beta = 8 / 3$ and $x_0 = y_0 = z_0 = 1$.
+
+```{r lorenz, echo = F}
+
+library(deSolve)
+
+# Define the Lorenz system as a function
+lorenz <- function(t, state, parameters) {
+  with(as.list(c(state, parameters)), {
+    dx <- sigma * (y - x)
+    dy <- x * (rho - z) - y
+    dz <- x * y - beta * z
+    return(list(c(dx, dy, dz)))
+  })
+}
+# Parameters
+parameters <- c(sigma = 10, rho = 28, beta = 8/3)
+
+# Initial state
+state <- c(x = 1, y = 1, z = 1)
+
+# Time points
+times <- seq(0, 25, by = 0.01)
+
+# Solve the Lorenz system
+out <- ode(y = state, times = times, func = lorenz, parms = parameters)
+
+# Extract the results
+x <- out[, "x"]
+y <- out[, "y"]
+z <- out[, "z"]
+
+# Plot the results
+scatterplot3d(x, y, z, type = "l", color = "blue", lwd = 0.5, 
+              main = "Lorenz Attractor", xlab = "X", ylab = "Y", zlab = "Z")
+
+```

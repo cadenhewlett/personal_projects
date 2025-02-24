@@ -1,0 +1,92 @@
+---
+title: "Implementation"
+author: "Caden Hewlett"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Particle Swarm Optimization (PSO) is an evolutionary algorithm (EA) inspired by the schooling of fish or the flocking of birds. The algorithm optimizes an objective function by iteratively improving a candidate solution with respect to a given measure or quantity. It is a gradient-free technique, meaning that the objective function does not need to be differentiable. 
+
+
+The algorithm is initialized with a population of ${N}$ candidate solutions called "particles." We henceforth denote the population of particles as $\mathfrak{X}_t = \big\{\mathbf{X}^{(1)}_t, \mathbf{X}^{(2)}_t, \dots, \mathbf{X}^{(N)}_t \big\}$, where $t \in \mathbb{N}$ is the iteration of the algorithm.  Each individual particle $\mathbf{X}^{(i)}_t$ has a position in the search space, for $i \in [1, N]$. For example, if the objective function $f$ maps $\mathbb{R}^d \mapsto \mathbb{R}$, then each particle  $\mathbf{X}^{(i)}_t$ is a $d$-dimensional vector of positions in the search space, denoted $\mathbf{X}^{(i)}_t = \langle x_{1}^{(i)}, \dots, x_{d}^{(i)} \rangle_t$. In addition to positions, each particle has a vector of velocities $\mathbf{V}^{(i)}_t$ in $d$-dimensional space that evolves with each iteration. It should be noted that the objective function $f$ is evaluated on the positions $f(\mathbf{X}^{(i)}_t)$, and the change in positions between generations $\mathbf{X}^{(i)}_t \rightarrow \mathbf{X}^{(i)}_{t + 1}$ is moderated by the velocity vector $\mathbf{V}^{(i)}_t =  \langle v_{1}^{(i)}, \dots, v_{d}^{(i)} \rangle_t$. Each particle has its own position and velocity. The velocity $\mathbf{V}^{(i)}_t$ evolves between generations $\mathbf{V}^{(i)}_t \rightarrow \mathbf{V}^{(i)}_{t + 1}$ by the *velocity update equation.* The position of a vector between generations is determined by adding the updated velocity to the current position, i.e.
+$$
+\mathbf{X}^{(i)}_{t + 1} = \mathbf{X}^{(i)}_t + \mathbf{V}^{(i)}_{t + 1}, \text{ for } i \in [1, N], \, t \in \mathbb{Z}^{+}
+$$
+
+Where $\mathbf{X}^{(i)}_t$ is the current position of particle $i$ in generation $t$, $\mathbf{X}^{(i)}_{t + 1}$ is the updated position at iteration $t + 1$, and $\mathbf{V}^{(i)}_{t + 1}$ is the updated velocity that controls the change in position.
+
+## Declaration of the Population
+
+In order implement the algorithm, we must have some population $\mathfrak{X}_0$ at $t = 0$. In this work, we initialize the population via a chaotic sequence. Specifically we use a logistic map. This allows our population initialization to be tractable (nonrandom and computable) and potentially non-uniform. 
+
+### The Logistic Map
+
+The Logistic Map depends on the parameter $r$, which controls the behaviour of the system and ranges between $0$ and $4$. 
+
+
+For $r \in [0, 1)$ the population will eventually die out, i.e. $x_n \rightarrow 0$. For $\mu \in [1, 3)$ the system stabilizes to a fixed point dependent on $\mu$, and for $\mu \in [3, \approx 3.57]$ the system exhibits period-doubling bifuractions between two points. Finally, for $r \in [3.57, 4]$ the system is chaotic and the values of $x_n$ are highly dependent on the initial condition $x_0$. 
+
+The general evolution of a logistic map is given by:
+
+$$
+x_{n + 1} = \mu \cdot x_n \cdot (1 - x_n), \text{ where } \mu \in [0, 4] \text{ and } x_0 \in \mathbb{R} \tag{1}
+$$
+
+Below is a bifurcation diagram of the logistic map with $x_0 = 0.35$ across $\mu$ values. We see that the system becomes increasingly chaotic past $\mu \approx 3.57$.
+
+![bifurcation](../bifurcation_diagram.png)
+
+### Use in the Population Declaration
+
+To ensure that our declarations are both tractable and diverse, we will use the logistic map rather than uniform declaration. 
+
+
+Let $N$ be the desired population size. Let $f: \mathbb{R}^D \mapsto \mathbb{R}$ be the objective function, and hence $D$ is the dimension of each particle. 
+
+Let the vector $\vec{x}_0$ be a vector of length $D$, where all elements of $\vec{x}$ are non-equal and within $[0, 1]$.
+
+Specifically, using set builder notation (since the order of $\vec{x}_0$ doesn't matter)
+
+$$
+\vec{x}_0 = \big\{x_{i} \mid \forall i \neq j, i \leq D,   (0 < x_i < 1) \land (x_i \neq x_j) \big\} \tag{R1}
+$$
+One potential declaration of $\vec{x}_0$ is random draws from a Uniform$(0,1)$ distribution. Another equivalently sound nonrandom declaration is the sequence $x_n  = \dfrac{n}{D + 1}$ where $n \in [1, D]$.
+
+Regardless, any set satisfying requirement $\text{R1}$ is a valid baseline for the chaotic initialization.
+
+Now, for all $x_i \in \vec{x}_0$, we apply $(1)$ to generate a chaotic sequence of length $N$. Ordering all such vectors into a matrix and returning each column to the original variable scale generates our desired $\mathfrak{X}_0$.
+
+
+### Implementation
+
+In our `R` implementation, this is done as follows:
+
+```{r}
+# SEE `initialize_population.R`
+```
+
+
+## Dynamically Weighted Informants
+
+To incorporate dynamically weighted informants into the Social component, we wish to build an equation of the following form, where $\mathcal{I}_i$ is the set of informant indices of $\mathbf{X}_t^{(i)}$
+
+$$
+\text{Social} = c_3 \sum_{j \in \mathcal{I}_i} \varphi_j  \cdot r_j \cdot (\mathbf{p}_t^{(j)} - \mathbf{X}_t^{(i)})
+$$
+Where $\mathbf{p}_t^{(j)}$ is the personal best location of particle $j$ at time $t$, $r_j \sim \text{unif}(0,1)$ is a random multiplier to encourage variability and $\varphi_j$ is the weight assigned to particle $j$. 
+
+In reality, however, we construct the following with dependence of $t$ and less randomness:
+$$
+\text{Social}(t) = c_3(t) \cdot \sum_{j \in \mathcal{I}_i} \varphi_j (t) \cdot (\mathbf{p}_t^{(j)} - \mathbf{X}_t^{(i)})
+$$
+Since $\varphi_j$ is a kernel weight, we know they sum to $1$. Hence an additional multiplication by a factor of $r_j$ will too quickly drive the values to zero. We use this dynamic social component as an alternative to SVF/RVF deterministic scaling. 
+
+
+
+

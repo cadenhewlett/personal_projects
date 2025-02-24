@@ -1,0 +1,20 @@
+---
+title: "TVAC and Evolutionary PSO"
+author: "Caden Hewlett"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Time-Varying Acceleration Coefficients and EPSO
+
+There are also strategies wherein the coefficients $w$, $c_1$, etc. vary with the episode $t$ relative to the maximal number of iterations $T$. One such model blends the idea of time-varying coefficients (TVAC) with evolutionary particle swarm optimization (EPSO),to define the time-dependent coefficients and velocity equations:
+$$
+\begin{aligned}
+\mathbf{V}_{t + 1}^{(i)} &=  {w}^{(i)}_{0t} \mathbf{V}_{t}^{(i)} + {w}^{(i)}_{1t}\big(\mathbf{p}_t^{(i)} -  \mathbf{X}_{t}^{(i)} \big) +  {w}^{(i)}_{2t}\big(\mathbf{g}_{\,t} -   \mathbf{X}_{t}^{(i)} \big) +  {w}^{(i)}_{3t}\big(\mathbf{p}_t^{(j \neq i)} -  \mathbf{X}_{t}^{(i)} \big) \\
+&\text{Where } {w}^{(i)}_{0t} = w + \tau \cdot r_0 \text{ and } w_{kt} =  c_k + \tau \cdot r_k, \text{ for } k \in [1,3]
+\end{aligned}
+$$

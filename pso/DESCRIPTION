@@ -1,0 +1,14 @@
+Package: CPSO
+Title: Experimentation with PSO
+Version: 0.0.0.9000
+Authors@R: 
+    person("Caden", "Hewlett", , "cadenh@student.ubc.ca", role = c("aut", "cre"),
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: Currently an implementation of FIPS.
+License: use_mit_license()
+Encoding: UTF-8
+Suggests:
+    testthat (>= 3.0.0)
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Config/testthat/edition: 3

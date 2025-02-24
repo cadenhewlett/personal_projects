@@ -1,0 +1,177 @@
+---
+title: "Particle Swarm Optimization"
+author: "Caden Hewlett"
+date: "`r Sys.Date()`"
+output: pdf_document
+bibliography: bibliography.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(CPSO)
+```
+
+## Introduction and Terminology
+
+Particle Swarm Optimization (PSO) is an evolutionary algorithm (EA) inspired by the schooling of fish or the flocking of birds. The algorithm optimizes an objective function by iteratively improving a candidate solution with respect to a given measure or quantity. It is a gradient-free technique, meaning that the objective function does not need to be differentiable. 
+
+
+The algorithm is initialized with a population of ${N}$ candidate solutions called "particles." We henceforth denote the population of particles as $\mathfrak{X}_t = \big\{\mathbf{X}^{(1)}_t, \mathbf{X}^{(2)}_t, \dots, \mathbf{X}^{(N)}_t \big\}$, where $t \in \mathbb{N}$ is the iteration of the algorithm.  Each individual particle $\mathbf{X}^{(i)}_t$ has a position in the search space, for $i \in [1, N]$. For example, if the objective function $f$ maps $\mathbb{R}^d \mapsto \mathbb{R}$, then each particle  $\mathbf{X}^{(i)}_t$ is a $d$-dimensional vector of positions in the search space, denoted $\mathbf{X}^{(i)}_t = \langle x_{1}^{(i)}, \dots, x_{d}^{(i)} \rangle_t$. In addition to positions, each particle has a vector of velocities $\mathbf{V}^{(i)}_t$ in $d$-dimensional space that evolves with each iteration. It should be noted that the objective function $f$ is evaluated on the positions $f(\mathbf{X}^{(i)}_t)$, and the change in positions between generations $\mathbf{X}^{(i)}_t \rightarrow \mathbf{X}^{(i)}_{t + 1}$ is moderated by the velocity vector $\mathbf{V}^{(i)}_t =  \langle v_{1}^{(i)}, \dots, v_{d}^{(i)} \rangle_t$. Each particle has its own position and velocity. The velocity $\mathbf{V}^{(i)}_t$ evolves between generations $\mathbf{V}^{(i)}_t \rightarrow \mathbf{V}^{(i)}_{t + 1}$ by the *velocity update equation.* The position of a vector between generations is determined by adding the updated velocity to the current position, i.e.
+$$
+\mathbf{X}^{(i)}_{t + 1} = \mathbf{X}^{(i)}_t + \mathbf{V}^{(i)}_{t + 1}, \text{ for } i \in [1, N], \, t \in \mathbb{Z}^{+}
+$$
+Where $\mathbf{X}^{(i)}_t$ is the current position of particle $i$ in generation $t$, $\mathbf{X}^{(i)}_{t + 1}$ is the updated position at iteration $t + 1$, and $\mathbf{V}^{(i)}_{t + 1}$ is the updated velocity that controls the change in position.
+
+## Velocity Update Equation
+
+At each iteration, the fitness of a particle with respect to the position $\mathbf{X}^{(i)}_t$ is computed. Two key metrics are recorded from the particle fitness $f(\mathbf{X}^{(i)}_t)$.
+
+### Personal Best
+
+Each particle has a ``personal best" as of iteration $t$, denoted $\mathbf{p}_t^{(i)}$. The personal best is the position vector of particle $i$ that yields the smallest result from the objective function, recalling that PSO minimizes $f$. Mathematically, we denote the personal best as:
+$$
+\mathbf{p}_t^{(i)} = \underset{{\ell \in [1, t]}}{\text{argmin}}\big( f(\mathbf{X}^{(i)}_{\ell}) \big), \text{ for } i \in [1,N], t \in \mathbb{Z}^{+}
+$$
+Where $\mathbf{p}_t^{(i)}$ is the position that has produced the lowest objective function value up to iteration $t$. Each particle $i$ maintains its own personal best $\mathbf{p}_t^{(i)}$ at each time step $t$.
+
+### Global Best
+
+In addition to the personal best, the velocity of the particles are influenced by the ``global best", denoted $\mathbf{g}_{\, t}$, which is the best position found across all particles in the swarm up to iteration $t$. The global best is the position vector across all $N$ particles in $\mathfrak{X}_t$ that yields the smallest result from the objective function. It is defined as follows:
+$$
+\mathbf{g}_{\,t} = \underset{{j \in [1, N]}}{\text{argmin}}\big( f(\mathbf{p}^{(j)}_{t}) \big), \text{ for }  t \in \mathbb{Z}^{+}
+$$
+Where $\mathbf{g}_{\,t}$ represents the unique global best position found among the personal bests $\mathbf{p}^{(j)}_{t}$ of all particles $j$ in the swarm $\mathfrak{X}_t$ at iteration $t$.
+
+
+### Velocity Update
+
+Using the global best $\mathbf{g}_{\,t}$ and the personal best $\mathbf{p}_t^{(i)}$, the velocity update equation for the $i$-th particle in the swarm at time $t$ is given as follows. 
+$$
+\begin{aligned}
+\mathbf{V}_{t + 1}^{(i)} &= w \mathbf{V}_{t}^{(i)} + r_1c_1\big(\mathbf{p}_t^{(i)} -  \mathbf{X}_{t}^{(i)} \big) + r_2c_2\big(\mathbf{g}_{\,t} -   \mathbf{X}_{t}^{(i)} \big)\\
+\text{For}& \hspace{0.20cm} c_1, c_2, w \in \mathbb{R}^{+} \;\text{ and }\; r_1, r_2 \overset{\text{iid}}{\sim} \text{ Uniform}(0,1)
+\end{aligned}
+$$
+Here, $c_1$ and $c_2$ are the acceleration coefficients and $w$ is the inertia weight. The first acceleration coefficient $c_1$ controls controls the influence of the particle’s distance from its personal best $\mathbf{p}_t^{(i)}$ on its next velocity. Similarly, the second acceleration coefficient $c_2$ moderates the impact of the particle's distance from the global best $\mathbf{g}_t$ on the next velocity. The inertia weight $w$ controls the degree to which the current velocity $\mathbf{V}_{t}^{(i)}$ on the updated velocity $\mathbf{V}_{t+1}^{(i)}$. A high value of $w$ results in faster-moving particles, promoting exploration of the search space. Conversely, a low $w$ will yield slower-moving particles, promoting exploitation by encouraging the particle to refine the current search area. In the above, $w$ is assumed to be constant; however, many implementations include a scheduled linear or exponential decay in $w$ proportional to iteration $t$ so that the algorithm exploits more as time progresses. By default, $w = \big(2 \log(2)\big)^{-1}$ and $c_1 = c_2 = \frac{1}{2} \log(2)$, recommended by empirical studies such as [@kennedy1995particle] and [@shi1998modified].
+
+## Fully-Informed Particle Swarm
+
+Informant-Based Particle Swarm Optimization (FIPS) is a variant of the traditional PSO algorithm that enhances how particles share information within the swarm. FIPS modifies the velocity update equation by allowing each particle to be influenced by multiple "informants" - a selected subset of other particles—rather than relying solely on the global best $\mathbf{g}_{\,t}$.
+
+In `psoptim`, the informants are selected randomly and without replacement. Each particle $\mathbf{X}_{t}^{(i)}$ has its own sampled set of informants. Further, the acceleration $c = \frac{1}{2} \log(2)$ is constant across all particles. The number of informants is constant for each particle, and is dictated by a hyper-parameter $\varrho$ and the swarm size $N$. The velocity update equation is given as follows, 
+$$
+\mathbf{V}_{t + 1}^{(i)} = w\mathbf{V}_{t}^{(i)} + cr_i\big(\mathbf{p}_t^{(i)} -  \mathbf{X}_{t}^{(i)} \big) + c\sum_{j \in \mathcal{I}_i} \big(\mathbf{p}_t^{(j)} -  \mathbf{X}_{t}^{(i)}\big) 
+$$
+Where $\mathcal{I}_i$ is a set of size $\varrho N -1$ containing the indices of the informants of the $i$-th particle. 
+$$
+\mathcal{I}_i = \big\{ j \in \{1, 2, \dots N\} \setminus \{i\} \; \mid \; j \text{ is sampled without replacement}, |\mathcal{I}_i| = \lceil \varrho N \rfloor \big\}
+$$
+The hyper-parameter $\varrho$ controls the proportion of the total population that act as an informant for a given particle. It can be tuned independently; however, by default it is defined as follows:
+$$
+\varrho = 1 - \Big(1 - \dfrac{1}{N}\Big)^{d}
+$$
+Where $N$ is the swarm size, and $d$ is the number of dimensions of each particle, i.e., the dimensionality of the search space.
+
+
+## Constriction
+
+In some implementations, a ``constriction" denoted $\chi$ is applied to the velocities. Introduced in [@clerc2002particle], the constriction factor helps to stabilize particle velocities, ensuring that they do not increase uncontrollably over time. Further, the constriction factor helps in guiding particles to converge towards a global optimum. It reduces the risk of particles diverging, which can happen if velocities are too large.
+
+The velocity update4 including constriction is given as:
+$$
+\mathbf{V}_{t + 1}^{(i)} = \chi\Big(\mathbf{V}_{t}^{(i)} + r_1c_1\big(\mathbf{p}_t^{(i)} -  \mathbf{X}_{t}^{(i)} \big) + r_2c_2\big(\mathbf{g}_{\,t} -   \mathbf{X}_{t}^{(i)} \big) \Big)
+$$
+Where $\chi \in \mathbb{R}^{+}$ is defined as:
+$$
+\chi = \dfrac{2}{\Big| 2 - \phi - \sqrt{\phi^2 - 4 \phi} \Big|}, \text{ where } \phi = c_1 +c_2
+$$
+Where, usually, $\phi \approx 4.1$ [@clerc2002particle]. Much like inertia weight $w$, the constriction factor $\chi$ can have scheduled temporal decay as a function of iteration $t$.
+
+
+## Survivability
+
+One new implementation I will try is to implement a ``survivability" quotient for each particle, similar to those present in genetic algorithms like GENOUD. 
+
+
+In general, the probability that each parameter vector $\mathbf{X}_t^{(i)}$ is selected to be reproduced in the generation $t + 1$ is a function of its rank; namely:
+$$
+\mathbb{P}\big(\mathbf{X}_t^{(i)} \in \mathfrak{X}_{t+1} \big)    = a + (1 - a) \cdot \left(1 - \left(\dfrac{R_t^{(i)}  - 1}{N - 1}\right)^p\right) \text{ where } R_t^{(i)} = \text{rank}\big( f(\mathbf{X}_t^{(i)}) \big), \text{ and } a \in \mathbb{R} \subseteq [0,1]
+$$
+Where $Q \in (0, 1)$ is a tuning parameter which is fixed to $Q = 0.5$ in the R implementation and $R_t^{(i)} \in \big\{1, 2, \dots, {N} \big\}$ is the rank of the code string as determined by the objective function and the direction of optimization. For example, if solving a minimization problem, $R_t^{(i)} = 1$ for the code string whose variables evaluated in the objective function are the smallest compared to all other individuals. It should be noted that an exception to the above geometric selection probability above is made when $R_t^{(i)} = 1$ for $i \in [1,  {N}]$. In this case, the individual $\mathbf{X}_t^{(i)}$ is guaranteed to be brought to the next generation.
+
+
+```{r survivprobs, eval = F}
+N = 500
+swarm <- initialize_swarm(N, -2, 2)
+objective_function <- function(x) { sum(x^2) }
+fitness <- evaluate_fitness(swarm$X, objective_function)
+trials <- rbinom(N, size = 1, prob = rank_map(fitness)) == 1
+fit_df <- data.frame(
+   fitness = fitness,
+   index  = 1:N
+ )
+plot(x = fit_df$index, y = fit_df$fitness, main = "Random Swarm, Red Indicates Eliminated Points")
+points(x = fit_df[!trials, "index"], y = fit_df[!trials, "fitness"], col = 'red')
+```
+## Time-Varying Acceleration Coefficients and EPSO
+
+There are also strategies wherein the coefficients $w$, $c_1$, etc. vary with the episode $t$ relative to the maximal number of iterations $T$. One such model blends the idea of time-varying coefficients (TVAC) with evolutionary particle swarm optimization (EPSO),to define the time-dependent coefficients and velocity equations:
+$$
+\begin{aligned}
+\mathbf{V}_{t + 1}^{(i)} &=  {w}^{(i)}_{0t} \mathbf{V}_{t}^{(i)} + {w}^{(i)}_{1t}\big(\mathbf{p}_t^{(i)} -  \mathbf{X}_{t}^{(i)} \big) +  {w}^{(i)}_{2t}\big(\mathbf{g}_{\,t} -   \mathbf{X}_{t}^{(i)} \big) +  {w}^{(i)}_{3t}\big(\mathbf{p}_t^{(j \neq i)} -  \mathbf{X}_{t}^{(i)} \big) \\
+&\text{Where } {w}^{(i)}_{0t} = w + \tau \cdot r_0 \text{ and } w_{kt} =  c_k + \tau \cdot r_k, \text{ for } k \in [1,3]
+\end{aligned}
+$$
+## Predator-Prey Dynamics
+I also want to explore predator-prey dynamics in terms of survivability and regeneration of particles. I will (tentatively) model the system with the Lotka–Volterra equations, which are differential equations given as follows:
+$$
+\begin{aligned}
+\frac{\text{d}x}{\text{d}t} &= \alpha x - \beta x y \\
+\frac{\text{d}y}{\text{d}t} &= -\gamma y + \delta x y 
+\end{aligned}
+$$
+Here, $t$ represents time;
+The prey's parameters, $\alpha$ and $\beta$, describe, respectively, the maximum prey per capita growth rate, and the effect of the presence of predators on the prey death rate.
+The predator's parameters, $\gamma$, $\delta$ , respectively describe the predator's per capita death rate, and the effect of the presence of prey on the predator's growth rate.
+
+
+
+```{r, echo = F, warning = F, message = F}
+library(deSolve)
+library(ggplot2)
+library(reshape2)  
+library(scatterplot3d)
+# Define the Lotka-Volterra system
+lotka_volterra <- function(t, state, parameters) {
+  with(as.list(c(state, parameters)), {
+    dx <- alpha * x - beta * x * y
+    dy <- delta * x * y - gamma * y
+    return(list(c(dx, dy)))
+  })
+}
+
+# Parameters
+parameters <- c(alpha = 1.5, beta = 1, gamma = 1, delta = 0.5)
+
+# Initial state values
+state <- c(x = 10, y = 5)
+
+# Time steps
+time <- seq(0, 50, by = 0.1)
+
+# Solving the equations
+out <- ode(y = state, times = time, func = lotka_volterra, parms = parameters)
+out <- as.data.frame(out)
+out_long <- reshape2::melt(out, id.vars = "time", measure.vars = c("x", "y"),
+                           variable.name = "Population", value.name = "Size")
+
+# Static 3D line plot using scatterplot3d with separate lines for prey and predator
+# Plot the dynamics in 3D using scatterplot3d
+scatterplot3d(out$time, out$x, out$y, type = "l",
+              main = "Plot of Lotka Volterra System",
+              xlab = "Time", ylab = "Prey (x)", zlab = "Predator (y)",
+              color = "blue", lwd = 2)
+```
+\newpage 
+
+## Sources

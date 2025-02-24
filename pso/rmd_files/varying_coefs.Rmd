@@ -1,0 +1,225 @@
+---
+title: "Chaotic Initialization"
+author: "Caden Hewlett"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Swarm Initialization
+
+
+We investigate the following swarm initialization procedure using logistic maps with a bifurcation coefficient $\mu \in [\approx3.569945672, 4]$.
+
+Consider the logistic map, defined as follows:
+$$
+y_{i + 1} = \mu \cdot y_i \cdot (1 - y_i), \text{ where } i \in 0, 1, 2, \dots \tag{1}
+$$
+The resulting $y_i$ is distributed in the interval $(0,1)$, and the initial $y_0 \in (0, 1)$ such that $y_0 \not \in \{0, 0.25, 0.50 , 0.75, 1\}$. 
+
+
+To match our nomenclature of PSO, we rewrite $(1)$ as follows:
+$$
+y_j^{(i + 1)} = \mu \cdot y_j^{(i)} \cdot (1 - y_j^{(i)}), \text{ where } j \in [1, D] \tag{2}
+$$
+
+### Time-Varying Acceleration Coefficients (TVAC)
+
+Time-varying acceleration coefficients (abbreviated as
+TVAC) is formulated to enhance the global search in the early stages of the optimization and to encourage the particles to converge towards the global optima at the end of the search, which can be achieved by changing the acceleration coefficients $c_1$ and $c_2$ with time in such a manner that the cognitive component is reduced while the social component is increased as the search proceeds. 
+
+With a large cognitive component and small social component at the beginning, particles are
+allowed to move around the search space instead of moving toward the population best during early stages. On the other hand, a small cognitive component and a large social component allow the particles to converge to the global optima in the latter stage of the optimization process.
+
+
+TVAC can be mathematically represented as:
+
+$$
+\begin{aligned}
+c_1(t) &= (c_{1i} -c_{1f} ) \times \Big(\dfrac{T - t}{T}\Big) + c_{1f} \\
+c_2(t) &= (c_{2i} -c_{2f} ) \times \Big(\dfrac{T - t}{T}\Big) + c_{2f} \\
+\text{By default, }& c_{1i} = c_{2f} = 0.5 \text{ and } c_{2i} = c_{1f} = 2.5 
+\end{aligned}
+$$
+Where, from the results (source) it hasbeen observed that best solutions can be determined when changing $c_1$ from $2.5$ to $0.5$ and changing $c_2$ from $0.5$ to $2.5$, over the full range of search.
+
+```{r, echo = F}
+# default values encourage global search initially 
+# and local search later in the search progress
+TVAC <- function(max_iter, c1i = 0.5, c1f = 2.5, c2i = 2.5, c2f = 0.5){
+  # time varying personal best acceleration
+  c1t = sapply(0:max_iter, function(t){
+      (c1i - c1f) * ((max_iter - t) / max_iter) + c1f
+  })
+  # time varying global best acceleration
+  c2t = sapply(0:max_iter, function(t){
+      (c2i - c2f) * ((max_iter - t) / max_iter) + c2f
+  })
+  # return both as a list to be used in the algo
+  return(list(c1 = c1t, c2 = c2t))
+}
+```
+
+We can plot these results below.
+
+
+```{r, echo = F}
+library(ggplot2)
+library(tidyr)
+tmax <- 20
+tvac_output <- TVAC(tmax)
+df <- data.frame(
+  x = (1:length(tvac_output$c1))-1, 
+  c1 = tvac_output$c1,
+  c2 = tvac_output$c2
+)
+df_long <- df %>%
+  pivot_longer(cols = c(c1, c2), names_to = "coef", values_to = "value")
+ptvac <- ggplot(df_long, aes(x = x, y = value, color = coef, group = coef)) +
+  geom_point(pch = 21) +
+  geom_line() +
+  labs(title = "TVAC", x = "Iteration", y = "", color = "Coef.") +
+  scale_color_manual(values = c(c1 = "red", c2 = "blue")) +
+  theme_bw()
+
+```
+
+
+### Sine-Cosine Acceleration Coefficients (SCAC)
+
+Compared to TVAC, SCAC can better balance the global search ability in the early stage and the global convergence in the later stage. 
+
+$$
+\begin{aligned}
+c_1(t) &= \varrho \times \sin \bigg( \Big(\dfrac{T-t}{T} \Big) \times \dfrac{\pi}{2} \bigg) + \delta \\
+c_2(t) &= \varrho \times \cos \bigg( \Big( \dfrac{T-t}{T}  \Big) \times \dfrac{\pi}{2} \bigg) + \delta  \\
+\text{By default, }& \varrho  = 2 \text{ and } \delta = 0.5
+\end{aligned}
+$$
+
+```{r, echo = F}
+# default values encourage global search initially 
+# and local search later in the search progress
+SCAC <- function(max_iter, rho = 2, delta = 0.5){
+  # time varying personal best acceleration
+  c1t = sapply(0:max_iter, function(t){
+      rho * sin(((max_iter - t) / max_iter) * (pi/2)) + delta
+  })
+  # time varying global best acceleration
+  c2t = sapply(0:max_iter, function(t){
+     rho * cos(((max_iter - t) / max_iter) * (pi/2)) + delta
+  })
+  # return both as a list to be used in the algo
+  return(list(c1 = c1t, c2 = c2t))
+}
+```
+```{r, echo = F}
+scac_output <- SCAC(tmax)
+df <- data.frame(
+  x = (1:length(scac_output$c1))-1, 
+  c1 = scac_output$c1,
+  c2 = scac_output$c2
+)
+df_long <- df %>%
+  pivot_longer(cols = c(c1, c2), names_to = "coef", values_to = "value")
+pscac <- ggplot(df_long, aes(x = x, y = value, color = coef, group = coef)) +
+  geom_point(pch = 21) +
+  geom_line() +
+  labs(title = "SCAC", x = "Iteration", y = "", color = "Coef.") +
+  scale_color_manual(values = c(c1 = "red", c2 = "blue")) +
+  theme_bw()
+
+```
+
+### Nonlinear Dynamic Acceleration Coefficients (NDAC)
+
+In literature (source 7), the nonlinear dynamic acceleration coefficients (NDAC) is added in the PSO method as a parameter update mechanism that has powerful capability of tuning cognitive component c1 and social component c2 .
+
+$$
+\begin{aligned}
+c_1(t) &= -(c_{1f} -c_{1i} ) \times \Big(\dfrac{t}{T}\Big)^2 + c_{1f} \\
+c_2(t) &= c_{1i} \times \Big(\dfrac{T - t}{T}\Big)^2 + c_{1f}  \times \Big(\dfrac{t}{T}\Big)\\
+\text{By default, }& c_{1i} = 0.5 \text{ and } c_{1f} = 2.5 
+\end{aligned}
+$$
+
+```{r, echo = F}
+NDAC <- function(max_iter, c1i = 0.5, c1f = 2.5){
+  # time varying personal best acceleration
+  c1t = sapply(0:max_iter, function(t){
+      -(c1f - c1i) * (t/max_iter)^2 + c1f
+  })
+  # time varying global best acceleration
+  c2t = sapply(0:max_iter, function(t){
+      c1i *(1 - t/max_iter)^2 + c1f * (t / max_iter)
+  })
+  # return both as a list to be used in the algo
+  return(list(c1 = c1t, c2 = c2t))
+}
+```
+```{r, echo = F}
+ndac_output <- NDAC(tmax)
+df <- data.frame(
+  x = (1:length(ndac_output$c1))-1, 
+  c1 = ndac_output$c1,
+  c2 = ndac_output$c2
+)
+df_long <- df %>%
+  pivot_longer(cols = c(c1, c2), names_to = "coef", values_to = "value")
+pndac <- ggplot(df_long, aes(x = x, y = value, color = coef, group = coef)) +
+  geom_point(pch = 21) +
+  geom_line() +
+  labs(title = "NDAC", x = "Iteration", y = "", color = "Coef.") +
+  scale_color_manual(values = c(c1 = "red", c2 = "blue")) +
+  theme_bw()
+
+```
+
+### Sigmoid-Based Acceleration Coefficients (NDAC)
+
+Proposed in the CPSOS work!
+
+$$
+\begin{aligned}
+c_1(t) &= \dfrac{1}{1 + \exp(- \lambda t/T)} + (c_{1f} - c_{1i})\Big(\dfrac{t-T}{T}\Big)^2 \\
+c_1(t) &= \dfrac{1}{1 + \exp(- \lambda t/T)} +  (c_{1f} - c_{1i})\Big(\dfrac{t}{T}\Big)^2 \\
+\text{By default, }& c_{1i} = 0.5, c_{1f} = 2.5 \text{ and } \lambda = 0.0001
+\end{aligned}
+$$
+```{r, echo = F}
+SBAC <- function(max_iter, c1i = 0.5, c1f = 2.5, lambda = 0.0001){
+  # time varying personal best acceleration
+  c1t = sapply(0:max_iter, function(t){
+     (1 / (1 + exp( -lambda *t/max_iter ) ) ) + 1*(c1f - c1i)*((t/max_iter) - 1)^2 
+  })
+  # time varying global best acceleration
+  c2t = sapply(0:max_iter, function(t){
+     (1 / (1 + exp( (- lambda * t)/max_iter ) ) ) + (c1f - c1i)*((t/max_iter))^2 
+  })
+  # return both as a list to be used in the algo
+  return(list(c1 = c1t, c2 = c2t))
+}
+```
+```{r, echo = F}
+sbac_output <- SBAC(tmax)
+df <- data.frame(
+  x = (1:length(sbac_output$c1))-1, 
+  c1 = sbac_output$c1,
+  c2 = sbac_output$c2
+)
+df_long <- df %>%
+  pivot_longer(cols = c(c1, c2), names_to = "coef", values_to = "value")
+psbac <- ggplot(df_long, aes(x = x, y = value, color = coef, group = coef)) +
+  geom_point(pch = 21) +
+  geom_line() +
+  labs(title = "SBAC", x = "Iteration", y = "", color = "Coef.") +
+  scale_color_manual(values = c(c1 = "red", c2 = "blue")) +
+  theme_bw()
+```
+```{r, echo = F,fig.width=8, fig.height=8}
+library(gridExtra)
+grid.arrange(ptvac, pscac, pndac, psbac, nrow = 2)
+```
