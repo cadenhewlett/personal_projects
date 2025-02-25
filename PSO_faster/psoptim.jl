@@ -7,6 +7,7 @@ function psoptim(par, fn::Function, lower = -1, upper = 1; kwargs... )
     # ------------------- #
     # -- Default Param -- #
     # ------------------- #
+    # NOTE: variables need new names
     default_controls = Dict(
         :trace => 0,
         :fnscale => 1,
@@ -22,9 +23,13 @@ function psoptim(par, fn::Function, lower = -1, upper = 1; kwargs... )
         :c.p => 0.5 + log(2),
         :c.g => 0.5 + log(2),
         :c.decay => "None",
-        :d => missing,
-        :v.max => missing,
-        :rand.order => true
+        :d => nothing,
+        :v.max => nothing,
+        :rand.order => true,
+        :max.restart => Inf,
+        :maxit.stagnate => Inf,
+        :trace.stats => false,
+        :type => "SPSO2007" # for now
     )
     # extract default control variable names
     con_keys = keys(default_controls)
@@ -43,4 +48,4 @@ function psoptim(par, fn::Function, lower = -1, upper = 1; kwargs... )
     end
     return(2)
 end    
-# println(psoptim(2, mean, control2 = 10))
+println(psoptim(2, mean, s = 10))
