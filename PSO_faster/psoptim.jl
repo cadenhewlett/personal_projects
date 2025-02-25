@@ -16,6 +16,16 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     upper = float.([lower[mod1(i, length(upper))] for i in 1:npar])
     println(lower)
     # ------------------- #
+    # --- Local Funcs --- #
+    # ------------------- #
+    function fn1(par)
+        fn(par) / p_fnscale
+    end
+    function L2_norm(x::AbstractVector{<:Number})
+        return sqrt(sum(x .^ 2))
+    end
+
+    # ------------------- #
     # -- Default Param -- #
     # ------------------- #
     default_controls = Dict(
@@ -68,12 +78,16 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     p_s = isnothing(controls[:s]) ? floor(10 + sqrt(npar)) : controls[:s]
     # average percent of informants
     p_p = isnothing(controls[:p]) ? 1 - (1 - 1 / p_s)^controls[:k] : controls[:p]
-    # ------------------- #
-    # --- Local Funcs --- #
-    # ------------------- #
-    function fn1(par)
-        fn(par) / p_fnscale
-    end
-    return(1)
+    # get the exploitation constant(s)
+    p_w = controls[:w]
+    # if two constants are supplied, separate them, else duplicate
+    p_w0, p_w1 = length(p_w) > 1 ? (p_w[1], p_w[2]) : (p_w, p_w)
+    # get the exploration constants
+    p_c_p = controls[:c_p] # local 
+    p_c_g = controls[:c_g] # global
+    # get the region size (default Euclidean norm)
+    p_d = isnothing(controls[:d]) ? L2_norm(upper - lower) : controls[:d]
+
+    return (1)
 end    
 println(psoptim([2], mean, lower=[1,2]))
