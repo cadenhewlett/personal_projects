@@ -21,6 +21,12 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     function fn1(par)
         fn(par) / p_fnscale
     end
+    # M x N uniform matrix scaled to lower and upper values
+    function mnunif(n::Int, m::Int, lower::Number, upper::Number)
+        M = rand(m, n) .* (upper - lower) .+ lower
+        return (M)
+    end
+    # compute Euclidean norm of a numeric vector
     function L2_norm(x::AbstractVector{<:Number})
         return sqrt(sum(x .^ 2))
     end
