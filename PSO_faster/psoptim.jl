@@ -88,7 +88,8 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     p_c_g = controls[:c_g] # global
     # get the region size (default Euclidean norm)
     p_d = isnothing(controls[:d]) ? L2_norm(upper - lower) : controls[:d]
-
+    # compute max velocity
+    p_vmax = isnothing(controls[:d]) ? controls[:v_max] : controls[:v_max] * p_d 
     return (1)
 end    
 println(psoptim([2], mean, lower=[1,2]))
