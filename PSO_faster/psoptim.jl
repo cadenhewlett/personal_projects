@@ -13,8 +13,7 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     # ----------------- #
     npar = length(par)
     lower = float.([lower[mod1(i, length(lower))] for i in 1:npar])
-    upper = float.([lower[mod1(i, length(upper))] for i in 1:npar])
-    println(lower)
+    upper = float.([upper[mod1(i, length(upper))] for i in 1:npar])
     # ------------------- #
     # --- Local Funcs --- #
     # ------------------- #
@@ -22,19 +21,24 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
         fn(par) / p_fnscale
     end
     # M x N uniform matrix scaled to lower and upper values
-    function mnunif(n::Int, m::Int, lower::Number, upper::Number)
-        M = rand(m, n) .* (upper - lower) .+ lower
-        return (M)
+    function mnunif(m::Int, n::Int, lower, upper)
+        # ensure bounds are column vectors
+        lower = isa(lower, Number) ? fill(lower, m) : lower
+        upper = isa(upper, Number) ? fill(upper, m) : upper
+        # generate m*n matrix scaled to the boundaries
+        return rand(m, n) .* (upper .- lower) .+ lower
     end
     # compute Euclidean norm of a numeric vector
     function L2_norm(x::AbstractVector{<:Number})
         return sqrt(sum(x .^ 2))
     end
-
+    # printing utility
+    function round_nothing(x::Any, digits::Int)
+        return x === nothing ? "nothing" : round(x, digits=digits)
+    end
     # ------------------- #
     # -- Default Param -- #
     # ------------------- #
-    # NOTE: variables need new names
     default_controls = Dict(
         :trace => 0,
         :fnscale => 1,
@@ -52,7 +56,10 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
         :c_decay => "None",
         :d => nothing,
         :v_max => nothing,
-        :rand_order => true
+        :rand_order => true,
+        :max_restart => Inf,
+        :maxit_stagnate => Inf,
+        :trace_stats => false
     )
     # extract default control variable names
     con_keys = keys(default_controls)
@@ -70,7 +77,7 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     # ------------------ #
     controls = merge(default_controls, kwargs)
     # extract all control variables
-    p_trace = controls[:trace]  
+    p_trace = controls[:trace] > 0
     # scale factor for function
     p_fnscale = controls[:fnscale] 
     # max evaluations (loop or function)
@@ -95,7 +102,39 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     # get the region size (default Euclidean norm)
     p_d = isnothing(controls[:d]) ? L2_norm(upper - lower) : controls[:d]
     # compute max velocity
-    p_vmax = isnothing(controls[:d]) ? controls[:v_max] : controls[:v_max] * p_d 
-    return (1)
+    p_vmax = isnothing(controls[:v_max]) ? controls[:v_max] : controls[:v_max] * p_d
+    # random ordering of swarm movement
+    p_randorder = controls[:rand_order]
+    # maximum restarts and stagnation threshold
+    p_maxrestart = controls[:max_restart]
+    p_maxstagnate = controls[:maxit_stagnate]
+    # collect detailed stats 
+    p_trace_stats =  Bool(controls[:trace_stats])
+    # report config before running
+    if p_trace
+       @info "Starting Particle Swarm..."
+       @info string("S=", p_s, ", K=", controls[:k], ", p=", round(p_p, digits = 4), 
+            ", w0 = ", round(p_w0, digits=4), ", w1 = ", round(p_w1, digits=4), 
+            ", c_p = ", round(p_c_p, digits=4), ", c_g = ", round(p_c_g, digits=4),
+            )
+        @info string(
+            "v_max = ", round_nothing(p_vmax, 4), ", d=", round_nothing(p_d, 4),
+        )
+    end
+    # setup performance storage
+    if p_trace_stats
+        nothing # TODO actually implement iterative storage
+    end
+    # scale tolerance by dimension of search space
+    if (p_reltol != 0)
+        p_reltol = p_reltol*p_d
+    end
+    # declare the population
+    X = mnunif(npar, Int(p_s), lower, upper)
+    # replace first column with initial guess if exists
+    if !any(isnothing.(par) .&& ismissing.(par)) && all(par .>= lower) && all(par .<= upper)
+        X[:, 1] = par
+    end
+    return (X)
 end    
-println(psoptim([2], mean, lower=[1,2]))
+(psoptim([-2,4], mean, lower=[-3,2], upper = [0, 6], trace = 1))
