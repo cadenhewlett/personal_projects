@@ -166,8 +166,18 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     i_best = argmin(f_p)
     # get the value of this best guess
     error = f_p[i_best]
-    return (error)
+    # initial reporting and storage
+    if p_trace && p_report == 1
+        println("Iteration 1: fitness = ", round(error, digits = 4))
+        if p_trace_stats
+            nothing # TODO actually implement iterative storage
+        end
+    end
+    # ----------------------- #
+    # ------ Main Loop ------ #
+    # ----------------------- #
+    return (P_improved)
 end   
 myfunc = x ->  abs(mean(x))
-test = psoptim([-2,4], myfunc, lower=[-3,2], upper = [0, 6], trace = 1, v_max = 2)
+test = psoptim([-2,4], myfunc, lower=[-3,2], upper = [0, 6], trace = 1, report = 1, v_max = 2)
 print(test)
