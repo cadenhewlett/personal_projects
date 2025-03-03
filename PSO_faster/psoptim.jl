@@ -33,8 +33,17 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
         return sqrt(sum(x .^ 2))
     end
     # printing utility
-    function round_nothing(x::Any, digits::Int)
-        return x === nothing ? "nothing" : round(x, digits=digits)
+    function round_any(x::Any, digits::Int)
+        if x === nothing
+            out = "nothing"
+        elseif x == Inf
+            out = "∞"
+        elseif x == -Inf
+            out = "-∞" 
+        else 
+            out = round(x, digits=digits)
+        end
+        return out
     end
     # ------------------- #
     # -- Default Param -- #
@@ -82,7 +91,7 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     # scale factor for function
     p_fnscale = controls[:fnscale] 
     # max evaluations (loop or function)
-    p_maxit = controls[:maxit]
+    p_maxit = Int(controls[:maxit])
     p_maxf = controls[:maxf]
     # absolute and relative tolerances for restarts
     p_abstol = controls[:abstol]
@@ -111,25 +120,31 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     p_maxstagnate = controls[:maxit_stagnate]
     # collect detailed stats 
     p_trace_stats =  Bool(controls[:trace_stats])
+    # scale tolerance by dimension of search space
+    if (p_reltol != 0)
+        p_reltol = p_reltol*p_d
+    end
     # report config before running
     if p_trace
-       @info "Starting Particle Swarm..."
-       @info string("S=", p_s, ", K=", controls[:k], ", p=", round(p_p, digits = 4), 
+       println("Starting Particle Swarm...")
+       @info string("S = ", p_s, ", K = ", controls[:k], ", p = ", round(p_p, digits = 4), 
             ", w0 = ", round(p_w0, digits=4), ", w1 = ", round(p_w1, digits=4), 
             ", c_p = ", round(p_c_p, digits=4), ", c_g = ", round(p_c_g, digits=4),
             )
         @info string(
-            "v_max = ", round_nothing(p_vmax, 4), ", d=", round_nothing(p_d, 4),
+            "v_max = ", round_any(p_vmax, 4), ", d = ", round_any(p_d, 4),
+        )
+        @info string(
+            "maxit = ", p_maxit, ", maxf = ", round_any(p_maxf, 2), ", abstol = ", 
+            round_any(p_abstol, 2), ", maxrestart = ", round_any(p_maxrestart, 2),
+            ", maxstagnate = ", round_any(p_maxstagnate, 2)
         )
     end
     # setup performance storage
     if p_trace_stats
         nothing # TODO actually implement iterative storage
     end
-    # scale tolerance by dimension of search space
-    if (p_reltol != 0)
-        p_reltol = p_reltol*p_d
-    end
+  
     # ------------------ #
     # ---- PSO Init ---- #
     # ------------------ #
@@ -155,7 +170,7 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     # initial function evaluation matrix
     f_x = fn1.(eachcol(X))
     # initial function evaluations = swarm size
-    stat_feval = p_s
+    stats_feval = p_s
     # initial personal best matrix is X_0
     P = X
     # similarly, initial best f(x) is f(X_0)
@@ -176,6 +191,16 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     # ----------------------- #
     # ------ Main Loop ------ #
     # ----------------------- #
+    stats_iter = 0
+    stats_restart = 0
+    stats_stagnate = 0
+    while  (stats_iter < p_maxit && stats_feval < p_maxf && error > p_abstol && stats_restart < p_maxrestart && stats_stagnate < p_maxstagnate)
+        println("one loop iteration")
+        stats_iter += 1
+        if stats_iter == 1
+            break
+        end
+    end
     return (P_improved)
 end   
 myfunc = x ->  abs(mean(x))
