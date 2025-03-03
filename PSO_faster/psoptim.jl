@@ -59,7 +59,8 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
         :rand_order => true,
         :max_restart => Inf,
         :maxit_stagnate => Inf,
-        :trace_stats => false
+        :trace_stats => false,
+        :type => 0
     )
     # extract default control variable names
     con_keys = keys(default_controls)
@@ -89,7 +90,7 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     # reporting cadence
     p_report = controls[:report]
     # starting swarm size
-    p_s = isnothing(controls[:s]) ? floor(10 + sqrt(npar)) : controls[:s]
+    p_s = isnothing(controls[:s]) ? Int(floor(10 + sqrt(npar))) : Int(controls[:s])
     # average percent of informants
     p_p = isnothing(controls[:p]) ? 1 - (1 - 1 / p_s)^controls[:k] : controls[:p]
     # get the exploitation constant(s)
@@ -129,12 +130,44 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     if (p_reltol != 0)
         p_reltol = p_reltol*p_d
     end
+    # ------------------ #
+    # ---- PSO Init ---- #
+    # ------------------ #
     # declare the population
     X = mnunif(npar, Int(p_s), lower, upper)
     # replace first column with initial guess if exists
     if !any(isnothing.(par) .&& ismissing.(par)) && all(par .>= lower) && all(par .<= upper)
         X[:, 1] = par
     end
-    return (X)
-end    
-(psoptim([-2,4], mean, lower=[-3,2], upper = [0, 6], trace = 1))
+    # initalization of velocity matrix
+    if controls[:type] == 0
+        V = mnunif(npar, Int(p_s), lower, upper) - X 
+    end
+    # if declared, restrict V_0 to maximal velocity
+    if !isnothing(p_vmax)
+        # temporary object for magnitude of velocity 
+        temp = L2_norm.(eachcol(V))
+        # rescaling factor wrt maximum
+        temp = min.(temp, p_vmax) ./ temp
+        # then rescale each particle's V by above factor
+        V = V * diagm(temp)
+    end
+    # initial function evaluation matrix
+    f_x = fn1.(eachcol(X))
+    # initial function evaluations = swarm size
+    stat_feval = p_s
+    # initial personal best matrix is X_0
+    P = X
+    # similarly, initial best f(x) is f(X_0)
+    f_p = f_x
+    # no improvement in the 0th iteration
+    P_improved = falses(p_s)
+    # extract initial best guess g_0
+    i_best = argmin(f_p)
+    # get the value of this best guess
+    error = f_p[i_best]
+    return (error)
+end   
+myfunc = x ->  abs(mean(x))
+test = psoptim([-2,4], myfunc, lower=[-3,2], upper = [0, 6], trace = 1, v_max = 2)
+print(test)
