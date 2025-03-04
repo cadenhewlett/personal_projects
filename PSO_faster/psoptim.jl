@@ -2,7 +2,8 @@
 # -- Adding Packages -- #
 # --------------------- #
 using Distributions
-
+using LinearAlgebra
+using Random
 function psoptim(par::Union{Number, AbstractVector{<:Number}},
                  fn::Function;
                  lower::Union{Number, AbstractVector{<:Number}} = -1, 
@@ -181,6 +182,7 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     i_best = argmin(f_p)
     # get the value of this best guess
     error = f_p[i_best]
+    init_links = true
     # initial reporting and storage
     if p_trace && p_report == 1
         println("Iteration 1: fitness = ", round(error, digits = 4))
@@ -195,14 +197,19 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     stats_restart = 0
     stats_stagnate = 0
     while  (stats_iter < p_maxit && stats_feval < p_maxf && error > p_abstol && stats_restart < p_maxrestart && stats_stagnate < p_maxstagnate)
-        println("one loop iteration")
+        # t \gets t + 1
         stats_iter += 1
-        if stats_iter == 1
-            break
+        if (p_p != 1 && init_links)
+            # generate SxS matrix of informant indices
+            links = rand(p_s, p_s) .<= p_p
+            # ensure that 
+            links[diagind(links)] .= 1
+            rand()
         end
+
     end
     return (P_improved)
 end   
 myfunc = x ->  abs(mean(x))
-test = psoptim([-2,4], myfunc, lower=[-3,2], upper = [0, 6], trace = 1, report = 1, v_max = 2)
+test = psoptim([-2,4], myfunc, lower=[-3,2], upper = [0, 6], trace = 1, report = 1, v_max = 2, maxit = 10)
 print(test)
