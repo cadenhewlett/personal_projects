@@ -91,6 +91,7 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     p_trace = controls[:trace] > 0
     # scale factor for function
     p_fnscale = controls[:fnscale] 
+    p_type = controls[:type]
     # max evaluations (loop or function)
     p_maxit = Int(controls[:maxit])
     p_maxf = controls[:maxf]
@@ -218,13 +219,49 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
                 # select the particle index of best informant
                 j = findall(L[:, i])[argmin(f_p[L[:, i]])]
             end
-        # get t as percentaege completion (wrt maxit)
-        t = max(stats_iter / p_maxit, stats_feval / p_maxf)
-        # update inertia coefficient if implementing decay
-        w_t =  (p_w0 + (p_w1 - p_w0) * t) # TODO: precompute and index with TVAC
-        # TODO: implement acceleration updating here
+            # get t as percentaege completion (wrt maxit)
+            t = max(stats_iter / p_maxit, stats_feval / p_maxf)
+            # update inertia coefficient if implementing decay
+            w_t =  (p_w0 + (p_w1 - p_w0) * t) # TODO: precompute and index with TVAC
+            # TODO: implement acceleration updating here  : alternative is to rep p_c_p maxit times and index wrt t
+        
+            # ------------------------- #
+            # ---- Update Velocity ---- #
+            # ------------------------- #
+            # V_{t + 1}^{(i)} = w_t  V_t^{(i)} + ...
+            V[:, i] = w_t .* V[:, i]
+            # using SPSO 2007 framework
+            if p_type == 0
+             # exploration: ... +  r_1c_1 \big( p_t^{(i)} - X^{(i)} \big)
+             V[:, i] = V[:, i] + rand(Uniform(0, p_c_p), npar).*(P[:, i] - X[:, i])
+             # exploitation: ... +  r_2c_2 \big( g_t - X^{(i)} \big)
+             V[:, i] = V[:, i] + rand(Uniform(0, p_c_g), npar).*(P[:, j] - X[:, i])
+            end
+            # then, check if velocity exceeds cap
+            if !isnothing(p_vmax) && abs(p_vmax) != Inf
+             # get velocity magnitude
+             magV = L2_norm(V[:, i])
+             if magV > p_vmax
+                # rescale V
+                V[:, i] = (p_vmax / temp) .* V[:, i]
+             end 
+            end
+            # ------------------------- #
+            # ---- Update Position ---- #
+            # ------------------------- #
+            # X_{t+1}^{(i)} = X_t^{(i)} + V_t^{(i)}
+            X[:, i]  = X[:, i] + V[:, i]
+            # check boundaries
+            oob = X[:, i] .< lower
+            if any(oob)
+                # stop particle at the boundaries
+                X[oob, i] = lower[oob]
+                V[oob, i] = 0 # bonk!
+            end
         end
+        # end of swarm movement
     end
+    # end of optimization
     return (f_p)
 end   
 myfunc = x ->  abs(mean(x))
