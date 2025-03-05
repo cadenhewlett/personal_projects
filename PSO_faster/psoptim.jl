@@ -197,18 +197,35 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     stats_restart = 0
     stats_stagnate = 0
     while  (stats_iter < p_maxit && stats_feval < p_maxf && error > p_abstol && stats_restart < p_maxrestart && stats_stagnate < p_maxstagnate)
-        # t \gets t + 1
+        # t <- t + 1
         stats_iter += 1
+        # if using informants and links
         if (p_p != 1 && init_links)
             # generate SxS matrix of informant indices
-            links = rand(p_s, p_s) .<= p_p
-            # ensure that 
-            links[diagind(links)] .= 1
-            rand()
+            L = rand(p_s, p_s) .<= p_p
+            # ensure that each particle is its own informant
+            L[diagind(L)] .= 1
         end
-
+        # generate (un)shuffled indices
+        index = p_randorder ? shuffle(1:p_s) : 1:p_s
+        # then for each index
+        for i ∈ index
+            # if using all particles as informants
+            if p_p == 1
+                # social component is global best
+                j = i_best
+            else 
+                # select the particle index of best informant
+                j = findall(L[:, i])[argmin(f_p[L[:, i]])]
+            end
+        # get t as percentaege completion (wrt maxit)
+        t = max(stats_iter / p_maxit, stats_feval / p_maxf)
+        # update inertia coefficient if implementing decay
+        w_t =  (p_w0 + (p_w1 - p_w0) * t) # TODO: precompute and index with TVAC
+        # TODO: implement acceleration updating here
+        end
     end
-    return (P_improved)
+    return (f_p)
 end   
 myfunc = x ->  abs(mean(x))
 test = psoptim([-2,4], myfunc, lower=[-3,2], upper = [0, 6], trace = 1, report = 1, v_max = 2, maxit = 10)
