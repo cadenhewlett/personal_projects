@@ -1,4 +1,4 @@
-options(digits = 10)
+options(digits = 16)
 psoptim_local <- function (par,
                            fn,
                            ...,
@@ -265,13 +265,9 @@ psoptim_local <- function (par,
         } else{
           # best informant
           j <- which(links[, i])[which.min(f.p[links[, i]])]
-          # if(stats.iter == 100){print(
-          #   rbind(sort(f.p[links[, i]]),
-          #         beta_kernel(length(sort(f.p[links[, i]])))))
-          # }
         }
 
-        # update coefficients
+        # 
         temp <- (p.w0 + (p.w1 - p.w0) * max(stats.iter / p.maxit, stats.feval /
                                               p.maxf))
         if(update_accel){
@@ -281,7 +277,7 @@ psoptim_local <- function (par,
         # ------------------------- #
         # ---- UPDATE VELOCITY ---- #
         # ------------------------- #
-        # V_{t + 1} = w*V_t
+        # V_{t + 1} = w*V_t + ...
         V[, i] <- temp * V[, i]
         # using 2007
         if (p.type == 0) {
@@ -289,7 +285,7 @@ psoptim_local <- function (par,
           V[, i] <- V[, i] + runif(npar, 0, p.c.p) * (P[, i] - X[, i])
           # if self is not the best particle already
           if (i != j){
-            # exploration (social component)
+            # exploration: ... + r_1c_1 \big( p_t^{(i)} - X^{(i)} \big)
             V[, i] <- V[, i] + runif(npar, 0, p.c.g) * (P[, j] - X[, i])
           }
         }
@@ -444,12 +440,22 @@ psoptim_local <- function (par,
 }
 
 set.seed(42)
-print(paste("Base Fitness:", pso::psoptim(rep(NA, 2), function(x){sum(x^2)},
+print(paste("Base Fitness:", pso::psoptim(rep(NA, 10), function(x){sum(x^2)},
                    lower = rep(-5, times = 10), upper = rep(5, times = 10),
-                   control =list(s = 40, maxit = 1000))$value))
-print(paste("New Fitness:",psoptim_local(rep(NA, 2), function(x){sum(x^2)},
+                   control =list(s = 40, maxit = 1000, 
+                                 trace = 0, REPORT = 100))$value))
+print(paste("New Fitness:",psoptim_local(rep(NA, 10), function(x){sum(x^2)},
                     lower = rep(-5, times = 10),
                     upper = rep(5, times = 10),
-                    control = list(s = 40, maxit = 1000, c.decay = "NDAC"))$value))
+                    control = list(s = 40, maxit = 1000))$value))
+D = 30
+S = 40
+MAXF = 100000
+pso::psoptim(runif(D, -100, 50), 
+             function(x){sum(x^2)},
+             lower = rep(-100, times = D),
+             upper = rep( 100, times = D),
+             control = list(s = S, maxit = MAXF,
+                            REPORT = MAXF/10))
 
 

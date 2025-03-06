@@ -4,7 +4,8 @@
 using Distributions
 using LinearAlgebra
 using Random
-function psoptim(par::Union{Number, AbstractVector{<:Number}},
+
+function psoptim(par::Union{Number, Nothing, AbstractVector{<:Number}, Vector{Nothing}},
                  fn::Function;
                  lower::Union{Number, AbstractVector{<:Number}} = -1, 
                  upper::Union{Number, AbstractVector{<:Number}} = 1,
@@ -153,7 +154,7 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     # declare the population
     X = mnunif(npar, Int(p_s), lower, upper)
     # replace first column with initial guess if exists
-    if !any(isnothing.(par) .&& ismissing.(par)) && all(par .>= lower) && all(par .<= upper)
+    if !any(isnothing.(par)) && all(par .>= lower) && all(par .<= upper)
         X[:, 1] = par
     end
     # initalization of velocity matrix
@@ -174,9 +175,9 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
     # initial function evaluations = swarm size
     stats_feval = p_s
     # initial personal best matrix is X_0
-    P = X
+    P = copy(X)
     # similarly, initial best f(x) is f(X_0)
-    f_p = f_x
+    f_p = copy(f_x)
     # no improvement in the 0th iteration
     P_improved = falses(p_s)
     # extract initial best guess g_0
@@ -256,14 +257,111 @@ function psoptim(par::Union{Number, AbstractVector{<:Number}},
             if any(oob)
                 # stop particle at the boundaries
                 X[oob, i] = lower[oob]
-                V[oob, i] = 0 # bonk!
+                V[oob, i] .= 0 # bonk!
             end
+            # repeat with upper bound
+            oob = X[:, i] .> upper
+            if any(oob)
+                X[oob, i] = upper[oob]
+                V[oob, i] .= 0
+            end
+            # ------------------------ #
+            # ---- Update Fitness ---- #
+            # ------------------------ #
+    
+            f_x[i] = fn1(X[:, i])
+            stats_feval += 1
+            if f_x[i] < f_p[i]
+                # update new personal bests & fitness
+                P[:, i] = X[:, i]
+                # if i == 2  
+                #     println("new personal best: Old Best = ", f_p[i], " New Best = ", f_x[i])
+                # end
+                f_p[i] = f_x[i]
+                if f_p[i] < f_p[i_best]
+                    # println("Updating i_best: Old Best = ", f_p[i_best], " New Best = ", f_p[i])
+                    i_best = i
+                end
+            end
+            # break if we've reached the max number of function evaluations
+            if stats_feval >= p_maxf
+                break
+            end
+
         end
         # end of swarm movement
+        # ------------------ #
+        # ---- Restarts ---- #
+        #------------------- #
+        if p_reltol != 0
+            # get distance from best
+            d = X .- P[:, i_best]
+            # using distance formula, get maximum distance
+            d = sqrt(max(sum(d .^ 2, dims=1)))
+            # if the largest distance is less than relative tol.
+            if d < p_reltol
+                # restart 
+                X = mnunif(npar, p_s, lower, upper)
+                V = (mnunif(npar, p_s, lower, upper) .- X)/2
+                # then, check if velocity exceeds cap
+                if !isnothing(p_vmax) && abs(p_vmax) != Inf
+                    # get velocity magnitude
+                    magV = map(L2_norm, eachcol(V))
+                    magV = min.(magV, p_vmax) ./ p_vmax
+                    # then rescale
+                    V = V * diagm(magV)
+                end 
+                # increase counter 
+                stats_restart += 1
+                if p_trace 
+                    println("It ", stats_iter, ": restarting")
+                end
+            end
+        end
+        # ------------------- #
+        # ---- Reporting ---- #
+        #-------------------- #
+        # check if there is improvement
+        match_previous = f_p[i_best] == error
+        # increment or reset stagnation
+        stats_stagnate = match_previous ? stats_stagnate + 1 : 0
+        # save fitness in this generation
+        error = f_p[i_best]
+        # reporting
+        if p_trace && (stats_iter % p_report == 0)
+            # report stats (diameter if reltol)
+            if (p_reltol != 0)
+                println("Iteration ", stats_iter, ": fitness = ",
+                        round(error, sigdigits = 4), ", swarm diam. =", 
+                        round(d, 4)
+                    )  
+            else
+                println("Iteration ", stats_iter, ": fitness = ",
+                        round(error, sigdigits = 4))
+            end
+            # update metrics
+            if p_trace_stats
+                nothing # TODO actually implement iterative storage
+            end
+        end
     end
     # end of optimization
-    return (f_p)
-end   
-myfunc = x ->  abs(mean(x))
-test = psoptim([-2,4], myfunc, lower=[-3,2], upper = [0, 6], trace = 1, report = 1, v_max = 2, maxit = 10)
-print(test)
+    output = (
+        par = P[:, i_best], 
+        value = f_p[i_best]
+    )  
+    return (output)
+end
+
+f1 = x ->  sum(x.^2)
+D = 30
+S = 40
+# maxF = 2
+maxF = 200000
+# F1 SETUP
+test = psoptim(rand(Uniform(-100, 50), D), f1, 
+               lower = fill(-100, D), 
+               upper = fill( 100, D), 
+               trace = 1, report = Int(maxT/10), maxit = Int(maxF/S), s = S)
+ # v_max = 2, 
+# print(test)
