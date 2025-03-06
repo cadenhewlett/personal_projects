@@ -353,15 +353,10 @@ function psoptim(par::Union{Number, Nothing, AbstractVector{<:Number}, Vector{No
     return (output)
 end
 
-f1 = x ->  sum(x.^2)
-D = 30
-S = 40
-# maxF = 2
-maxF = 200000
 # F1 SETUP
-test = psoptim(rand(Uniform(-100, 50), D), f1, 
-               lower = fill(-100, D), 
-               upper = fill( 100, D), 
-               trace = 1, report = Int(maxT/10), maxit = Int(maxF/S), s = S)
+# test = psoptim(rand(Uniform(-100, 50), D), f1, 
+#                lower = fill(-100, D), 
+#                upper = fill( 100, D), 
+#                trace = 1, report = Int(maxT/10), maxit = Int(maxF/S), s = S)
  # v_max = 2, 
 # print(test)
