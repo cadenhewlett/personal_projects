@@ -1,6 +1,8 @@
 using LinearAlgebra
 using Random
 using Distributions
+using Base.Threads
+Pkg.add("Threads")
 function mnunif(m::Int, n::Int, lower, upper)
     # ensure bounds are column vectors
     lower = isa(lower, Number) ? fill(lower, m) : lower

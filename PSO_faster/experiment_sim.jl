@@ -1,13 +1,9 @@
 using Random
 Random.seed!(1928)
 include("psoptim.jl")
-# ------------------ #
-# --- PSO Tests ---- #
-# ------------------ #
-D = 30
-S = 40
-maxFE = 200000
-reps = 25
+# ---------------------- #
+# --- Test Functions --- #
+# ---------------------- #
 # notation 
 ∑ = sum
 ∏ = prod
@@ -58,6 +54,9 @@ f9 = function(x) # penalized 1
     # function value + penalty
     return π*(T1 + T2 + T3)/D + ∑(u.(x, 10))
 end
+# ------------------ #
+# --- Test Setup --- #
+#------------------- #
 # function list
 F = [f1, f2, f3, f4, f5, f6, f7, f8, f9]
 # search spaces 
@@ -66,17 +65,47 @@ search_U = [100, 10, 10, 1.28, 500, 5.12, 32, 600, 50]
 # initialziation spaces
 init_L = [-100, -10, -10, -1.28, -500, -5.12, -32, -600, -50]
 init_U = [50, 5, 5, 0.64, 500, 2, 16, 200, 25]
-
-k = 9
-
-result = psoptim(
+# number of tests per algorithm
+M = 25
+K = 1 # length(F)
+D = 30
+S = 40
+maxFE = 200000
+# ------------------ #
+# ---- Run Test ---- #
+#------------------- #
+results = Vector{Float64}(undef, M)
+k = 1
+for m ∈ 1:M
+    if m % 5 == 0
+        println("Iteration: ", m)
+    end
+    # m-th optimization of the k-th function
+    fit = psoptim(
                rand(Uniform(init_L[k], init_U[k]), D), 
                F[k], 
                lower = fill(search_L[k], D), 
-               upper = fill(search_U[k], D), 
-               trace = 1, 
+               upper = fill(search_U[k], D),  
                report = Int(maxFE/400), 
                maxit = Int(maxFE/S), 
                s = S)
- # v_max = 2, 
+    # record result of m-th thing
+    results[m] = fit.value
+end
+# EVD = sum(|fit.par - xstar| < epsilon) for each dimension
+# epsioln is a declared threshold
+# compute summary stats of all M results
+res_summary = [mean(results), std(results), median(results), minimum(results), maximum(results)]
+print(res_summary)
+# result = psoptim(
+#                rand(Uniform(init_L[k], init_U[k]), D), 
+#                F[k], 
+#                lower = fill(search_L[k], D), 
+#                upper = fill(search_U[k], D), 
+#                trace = 1, 
+#                report = Int(maxFE/400), 
+#                maxit = Int(maxFE/S), 
+#                s = S)
+# result.value
+
 # print(test)
