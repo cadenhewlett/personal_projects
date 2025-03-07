@@ -34,17 +34,41 @@ f7 = function(x) # Ackley's
     T2 =  -1*exp( ∑(d -> cos(2*π*x[d]), 1:length(x)) / D)
     return T1 + T2 + 20 + exp(1)
 end
-
+f8 = function(x) # Griewank's
+    1 + ∑(d -> (x[d]^2/4000), 1:length(x)) - ∏(d -> (cos(x[d]/sqrt(d))), 1:length(x))
+end
+f9 = function(x) # penalized 1
+    D = length(x)
+    # main penalty term
+    u = function(x, a)
+       if x > a
+        return 100*(x-a)^4
+       elseif -a ≤ x ≤ a
+        return 0
+       else 
+        return 100*(-x - a)^4
+       end
+    end
+    # x transform
+    y = 1 .+ (x .+ 1)./4
+    # main terms
+    T1 = 10*(sin(π * y[1])^2)
+    T2 = ∑(d -> (y[d] - 1)^2 * (1 + 10*(sin(π * y[d + 1])^2)), 1:(D-1) )
+    T3 = (y[D] - 1)^2
+    # function value + penalty
+    return π*(T1 + T2 + T3)/D + ∑(u.(x, 10))
+end
+f9([0, 0, 0])
 # function list
-F = [f1, f2, f3, f4, f5, f6, f7]
+F = [f1, f2, f3, f4, f5, f6, f7, f8]
 # search spaces 
-search_L = [-100, -10, -10, -1.28, -500, -5.12, -32]
-search_U = [100, 10, 10, 1.28, 500, 5.12, 32]
+search_L = [-100, -10, -10, -1.28, -500, -5.12, -32, -600]
+search_U = [100, 10, 10, 1.28, 500, 5.12, 32, 600]
 # initialziation spaces
-init_L = [-100, -10, -10, -1.28, -500, -5.12, -32]
-init_U = [50, 5, 5, 0.64, 500, 2, 16]
+init_L = [-100, -10, -10, -1.28, -500, -5.12, -32, -600]
+init_U = [50, 5, 5, 0.64, 500, 2, 16, 200]
 
-k = 7
+k = 6
 
 result = psoptim(
                rand(Uniform(init_L[k], init_U[k]), D), 
