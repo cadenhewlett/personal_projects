@@ -58,17 +58,16 @@ f9 = function(x) # penalized 1
     # function value + penalty
     return π*(T1 + T2 + T3)/D + ∑(u.(x, 10))
 end
-f9([0, 0, 0])
 # function list
-F = [f1, f2, f3, f4, f5, f6, f7, f8]
+F = [f1, f2, f3, f4, f5, f6, f7, f8, f9]
 # search spaces 
-search_L = [-100, -10, -10, -1.28, -500, -5.12, -32, -600]
-search_U = [100, 10, 10, 1.28, 500, 5.12, 32, 600]
+search_L = [-100, -10, -10, -1.28, -500, -5.12, -32, -600, -50]
+search_U = [100, 10, 10, 1.28, 500, 5.12, 32, 600, 50]
 # initialziation spaces
-init_L = [-100, -10, -10, -1.28, -500, -5.12, -32, -600]
-init_U = [50, 5, 5, 0.64, 500, 2, 16, 200]
+init_L = [-100, -10, -10, -1.28, -500, -5.12, -32, -600, -50]
+init_U = [50, 5, 5, 0.64, 500, 2, 16, 200, 25]
 
-k = 6
+k = 9
 
 result = psoptim(
                rand(Uniform(init_L[k], init_U[k]), D), 
