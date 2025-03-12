@@ -1,4 +1,5 @@
 using Random
+using DataFrames
 Random.seed!(1928)
 include("psoptim.jl")
 # ---------------------- #
@@ -66,37 +67,43 @@ search_U = [100, 10, 10, 1.28, 500, 5.12, 32, 600, 50]
 init_L = [-100, -10, -10, -1.28, -500, -5.12, -32, -600, -50]
 init_U = [50, 5, 5, 0.64, 500, 2, 16, 200, 25]
 # number of tests per algorithm
-M = 25
-K = 1 # length(F)
+M = 2
+K = length(F)
 D = 30
 S = 40
 maxFE = 200000
 # ------------------ #
 # ---- Run Test ---- #
 #------------------- #
-results = Vector{Float64}(undef, M)
+results = zeros(K, M)
 k = 1
-for m ∈ 1:M
-    if m % 5 == 0
-        println("Iteration: ", m)
+for k ∈ 1:K
+    for m ∈ 1:M
+        if m % 5 == 0
+            println("Iteration: ", m)
+        end
+        # m-th optimization of the k-th function
+        fit = psoptim(
+                   rand(Uniform(init_L[k], init_U[k]), D), 
+                   F[k], 
+                   lower = fill(search_L[k], D), 
+                   upper = fill(search_U[k], D),  
+                   report = Int(maxFE/400), 
+                   maxit = Int(maxFE/S), 
+                   s = S)
+        # record result of m-th thing
+        results[k, m] = fit.value
     end
-    # m-th optimization of the k-th function
-    fit = psoptim(
-               rand(Uniform(init_L[k], init_U[k]), D), 
-               F[k], 
-               lower = fill(search_L[k], D), 
-               upper = fill(search_U[k], D),  
-               report = Int(maxFE/400), 
-               maxit = Int(maxFE/S), 
-               s = S)
-    # record result of m-th thing
-    results[m] = fit.value
 end
+
+results_df = DataFrame(results', :auto)
+print(results_df)
+println(mean.(eachcol(results_df)))
 # EVD = sum(|fit.par - xstar| < epsilon) for each dimension
 # epsioln is a declared threshold
 # compute summary stats of all M results
-res_summary = [mean(results), std(results), median(results), minimum(results), maximum(results)]
-print(res_summary)
+#res_summary = [mean(results), std(results), median(results), minimum(results), maximum(results)]
+#print(res_summary)
 # result = psoptim(
 #                rand(Uniform(init_L[k], init_U[k]), D), 
 #                F[k], 

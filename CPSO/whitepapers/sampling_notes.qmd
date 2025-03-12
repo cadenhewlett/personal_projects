@@ -1,0 +1,56 @@
+---
+title: "Overview of Spectral Approach for DoE"
+format: html
+editor: visual
+---
+
+## Overview
+
+Here I am taking notes on *Spectral Approach for the Design of Experiments: Design, Analysis and Algorithms*, by Kailkhura et. al,
+
+## Definitions
+
+### Definition 1: Space-filling Design
+
+A space-filling design is a set of samples that are distributed according to a uniform probability distribution (Objective 1: Randomness) but no two samples are closer than a given minimum distance $r_{\text{min}}$ (Objective 2: Coverage).
+
+### Definition 2: Point-Correlation Function (PCF)
+
+Denote the intensity of a point process $\mathcal{X}$ as $\lambda(\mathcal{X})$, which is the average number of points in an infinitesimal volume around $\mathcal{X}$ . For isotropic point processes (invariant under rotation / independent of direction) this is a constant value. To define the product density $\beta$, let $\{B_i\}$ denote the set of infinitesimal spheres around the points, and $\{\text{d}V_i\}$ indicate the volume measures of $B_i$ . Then we have $\mathbb{P}(\mathbf{X}_1 = \mathbf{x}_1, \dots ,\mathbf{X}_N = \mathbf{x}_N) = \beta(\mathbf{x}_1, \dots , \mathbf{x}_N)\text{d}V_1\dots\text{d}V_N$ which represents the probability of having points $\{\mathbf{x}_i\}$ in infinitesimal spheres $\{B_i\}$. In the isotropic case, for a pair of points, $\beta$ depends only on the distance between the points. Thus, $\beta(\mathbf{x}_i, \mathbf{x}_j) = \beta(\|\mathbf{x}_i - \mathbf{x}_j\|) = \beta(r)$ and $\mathbb{P}(r) = \beta(r)\text{d}V_i\text{d}V_j$ . The PCF is then defined as $$
+G(r) = \frac{\beta}{\lambda^2}
+$$
+
+The authors note that the PCF characterizes the *spatial* properties of a sample design. However, it is easier to link the quality metric of a sample design to its *spectral* properties. Therefore, they establish a connection between the spatial and spectral properties of a sample design.
+
+### Definition 3: Power Spectral Density
+
+For a finite set of $N$ points, $\{\mathbf{x}_j\}_{j = 1}^N$ in a region with unit volume, the power spectral density of the sampling function $\sum_{j = 1}^N \delta(\mathbf{x} - \mathbf{x}_j)$ , where \$\\delta\$ is a delta function, is formally defined as:
+
+$$
+P(\mathbf{k}) = \frac{1}{N}|S(\mathbf{k})|^2 = \frac{1}{N}\sum_{j, \ell}\exp\big(-2 \pi i \mathbf{k}.(\mathbf{x}_\ell - \mathbf{x}_j) \big)
+$$
+
+Where $|\cdot|$ is the $\ell_2$ -norm and $S(\mathbf{k})$ denotes the Fourier transform of the sampling function.
+
+
+#### Simple Example: Definition 3
+
+Let's have a simple example, where $N = 2$ and $\{\mathbf{x}_j\}_{j = 1}^N = \big\{ (0,0), (0.5,0.5)\}$. The sampling function is then $\sum_{j = 1}^N \delta(\mathbf{x} - \mathbf{x}_j) = \delta(\mathbf{x} - (0,0)) + \delta(\mathbf{x} - (0.5,0.5))$. The Fourier transform is then 
+$$S(\mathbf{k}) = \sum_{j=1}^2 \exp(-2i\pi \mathbf{k}\cdot \mathbf{x}_j) = e^{- 2 i \pi \mathbf{k} \cdot (0,0)} + e^{- 2 i \pi \mathbf{k} \cdot (0.5,0.5)}$$
+If we let $\mathbf{k} = (k_1, k_2)$ then
+$$
+S(\mathbf{k})=e^{- 2 i \pi (k_1, k_2) \cdot (0,0)} + e^{- 2 i \pi (k_1, k_2) \cdot (0.5,0.5)} = 1 + e^{- i \pi (k_1 + k_2)}
+$$
+Then, $P(\mathbf{k}) = \frac{1}{N}|S(\mathbf{k})|^2$ can be written as:
+$$
+\frac{1}{2}\bigg|1 + e^{-i\pi (k_1 + k_2)^2}\bigg|^2 = \frac{1}{2}\bigg( (1 + e^{-i \pi(k_1 + k_2)})(1 + e^{i \pi (k_1 + k_2)})\bigg) = \frac{1}{2}\Big(2 + 2\cos\big(\pi(k_1 + k_2)\big)\Big)
+$$
+Which, using $1 + \cos(x) = 2 \cos^2(x/2)$ simplifies to...
+$$
+P(\mathbf{k}) = 2\cos^2\Big(\frac{\pi}{2}(k_1 + k_2) \Big)
+$$
+Which we notice is equivalent to the written equation...
+$$
+P(\mathbf{k}) = \frac{1}{N} \sum_{i,j}\exp\big(-2 i \pi \mathbf{k} \cdot (\mathbf{x}_i - \mathbf{x}_j)\big)
+$$
+The above evaluates to the binomial expansion shown previously. 
