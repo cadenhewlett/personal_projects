@@ -1,0 +1,24 @@
+---
+title: "Untitled"
+format: html
+---
+
+## Introduction
+
+I propose a method of weighing informants based on their rankings. Specifically, let $\mathfrak{X}^{\prime}$ be a sample of informants from population $\mathfrak{X}$. Naturally, we write this as $\mathfrak{X}^{\prime} = \{\mathbf{X}_t^{(j)}\}_{j = 1}^S$ where $\mathbf{X}_t^{(j)}$ is the $j$-th informant particle of $S$. We weigh each informant based on a $\text{Beta}(1, \beta)$ distribution, where $\beta$ is a function of the episode $t$. The purpose here is to illustrate that the Beta PDF simplifies in this case. Let $X \sim \text{Beta}(\alpha, \beta)$. The PDF is given by:
+
+$$
+f_X(x) = \dfrac{\Gamma(\alpha + \beta)}{\Gamma(\alpha)\Gamma(\beta)}\Big( x^{\alpha - 1} (1-x)^{\beta - 1} \Big)
+$$
+
+Setting $\alpha = 1$ we simplify:
+
+$$
+f_X(x)\mid \alpha = 1 = \dfrac{\Gamma(1 + \beta)}{\Gamma(\alpha)\Gamma(\beta)}\Big( x^{1- 1} (1-x)^{\beta - 1} \Big)
+$$
+
+Recalling $\Gamma(1) = 0! = 1$ and $\Gamma(z + 1) = z \Gamma(z)$, we can simplify the above as $$
+\begin{aligned}
+f_X(x)\mid \alpha = 1 = \dfrac{\beta\Gamma(\beta)}{\Gamma(\beta)} (1-x)^{\beta - 1} = \boxed{\beta(1-x)^{\beta - 1}}
+\end{aligned}
+$$
