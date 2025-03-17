@@ -30,3 +30,11 @@ p_p = 0.35
  end
  
 vcat(beta_weights(5, 3)', betafaster(5,3)')
+# performance-weighted (descending kernel) for informants
+# and also constriction
+# survival probability
+# if deb, reinsert at a maximal distance from the swarm (based on current diameter)
+
+# other ideas...
+# add a Bayesian twist? P(approaching optima | trajectory)
+#                       P(global optima | other particles)

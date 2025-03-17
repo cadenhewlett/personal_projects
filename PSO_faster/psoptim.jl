@@ -13,7 +13,7 @@ function psoptim(par::Union{Number, Nothing, AbstractVector{<:Number}, Vector{No
     # ----------------- #
     # -- Basic Setup -- #
     # ----------------- #
-    npar = length(par)
+    npar = isnothing(par) ? length(lower) : length(par)
     lower = float.([lower[mod1(i, length(lower))] for i in 1:npar])
     upper = float.([upper[mod1(i, length(upper))] for i in 1:npar])
     # ------------------- #
@@ -145,7 +145,13 @@ function psoptim(par::Union{Number, Nothing, AbstractVector{<:Number}, Vector{No
     end
     # setup performance storage
     if p_trace_stats
-        nothing # TODO actually implement iterative storage
+        # preallocate vectors
+        stats_trace_it = Vector{Float64}(undef, p_maxit)  
+        stats_trace_error = Vector{Float64}(undef, p_maxit)  
+        # function evaluations: S by t
+        stats_trace_f = Matrix{Float64}(undef, Int(p_s), p_maxit)  
+        # particle positions: p by S by t
+        stats_trace_x = Array{Float64}(undef, npar, Int(p_s), p_maxit)
     end
   
     # ------------------ #
@@ -181,15 +187,18 @@ function psoptim(par::Union{Number, Nothing, AbstractVector{<:Number}, Vector{No
     # no improvement in the 0th iteration
     P_improved = falses(p_s)
     # extract initial best guess g_0
-    i_best = argmin(f_p)
+    i_best = copy(argmin(f_p))
     # get the value of this best guess
-    error = f_p[i_best]
+    error = copy(f_p[i_best])
     init_links = true
     # initial reporting and storage
     if p_trace && p_report == 1
         println("Iteration 1: fitness = ", round(error, digits = 4))
         if p_trace_stats
-            nothing # TODO actually implement iterative storage
+            stats_trace_it[1] = 1
+            stats_trace_error[1] = error
+            stats_trace_f[:, 1] .= f_x
+            stats_trace_x[:, :, 1] .= X
         end
     end
     # ----------------------- #
@@ -279,7 +288,7 @@ function psoptim(par::Union{Number, Nothing, AbstractVector{<:Number}, Vector{No
                 # end
                 f_p[i] = f_x[i]
                 if f_p[i] < f_p[i_best]
-                    # println("Updating i_best: Old Best = ", f_p[i_best], " New Best = ", f_p[i])
+                    println("Updating i_best: Old Best = ", f_p[i_best], " New Best = ", f_p[i])
                     i_best = i
                 end
             end
@@ -341,22 +350,32 @@ function psoptim(par::Union{Number, Nothing, AbstractVector{<:Number}, Vector{No
             end
             # update metrics
             if p_trace_stats
-                nothing # TODO actually implement iterative storage
+                println(stats_iter)
+                stats_trace_it[stats_iter] = (stats_iter)
+                stats_trace_error[stats_iter] = error
+                stats_trace_f[:, stats_iter] .= f_x
+                stats_trace_x[:, :, stats_iter] .= X
             end
         end
     end
     # end of optimization
-    output = (
-        par = P[:, i_best], 
-        value = f_p[i_best]
-    )  
+    if p_trace_stats
+        output = (
+            par = P[:, i_best], 
+            value = f_p[i_best],
+            X = stats_trace_x,
+            f_X = stats_trace_f,
+            err = stats_trace_error,
+            iters = stats_trace_it
+         ) 
+    else
+        output = (
+            par = P[:, i_best], 
+            value = f_p[i_best]
+        )  
+    end
     return (output)
 end
 
-# F1 SETUP
-# test = psoptim(rand(Uniform(-100, 50), D), f1, 
-#                lower = fill(-100, D), 
-#                upper = fill( 100, D), 
-#                trace = 1, report = Int(maxT/10), maxit = Int(maxF/S), s = S)
- # v_max = 2, 
-# print(test)
+
+
