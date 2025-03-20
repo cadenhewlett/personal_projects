@@ -350,7 +350,6 @@ function psoptim(par::Union{Number, Nothing, AbstractVector{<:Number}, Vector{No
             end
             # update metrics
             if p_trace_stats
-                println(stats_iter)
                 stats_trace_it[stats_iter] = (stats_iter)
                 stats_trace_error[stats_iter] = error
                 stats_trace_f[:, stats_iter] .= f_x
