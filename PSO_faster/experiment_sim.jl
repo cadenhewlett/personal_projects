@@ -2,6 +2,7 @@ using Random
 using DataFrames
 Random.seed!(1928)
 include("psoptim.jl")
+evaluate_file = false
 # ---------------------- #
 # --- Test Functions --- #
 # ---------------------- #
@@ -77,28 +78,30 @@ maxFE = 200000
 #------------------- #
 results = zeros(K, M)
 k = 1
-for k ∈ 1:K
-    for m ∈ 1:M
-        if m % 5 == 0
-            println("Iteration: ", m)
+if evaluate_file == true
+    for k ∈ 1:K
+        for m ∈ 1:M
+            if m % 5 == 0
+                println("Iteration: ", m)
+            end
+            # m-th optimization of the k-th function
+            fit = psoptim(
+                    rand(Uniform(init_L[k], init_U[k]), D), 
+                    F[k], 
+                    lower = fill(search_L[k], D), 
+                    upper = fill(search_U[k], D),  
+                    report = Int(maxFE/400), 
+                    maxit = Int(maxFE/S), 
+                    s = S)
+            # record result of m-th thing
+            results[k, m] = fit.value
         end
-        # m-th optimization of the k-th function
-        fit = psoptim(
-                   rand(Uniform(init_L[k], init_U[k]), D), 
-                   F[k], 
-                   lower = fill(search_L[k], D), 
-                   upper = fill(search_U[k], D),  
-                   report = Int(maxFE/400), 
-                   maxit = Int(maxFE/S), 
-                   s = S)
-        # record result of m-th thing
-        results[k, m] = fit.value
     end
-end
 
 results_df = DataFrame(results', :auto)
 print(results_df)
 println(mean.(eachcol(results_df)))
+end
 # EVD = sum(|fit.par - xstar| < epsilon) for each dimension
 # epsioln is a declared threshold
 # compute summary stats of all M results
