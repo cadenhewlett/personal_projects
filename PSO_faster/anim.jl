@@ -8,11 +8,11 @@ include("experiment_sim.jl")
 # ---- RUN PSO ---- #
 # ----------------- #
 # Simple R2, 5S setup 
-S = 20
+S = 10
 D = 2
-k = 3
+k = 4
 # with f1
-func = F[k]
+func = F[6]
 # fit particle swarm
 M = 250
 pso_fit = psoptim( rand(Uniform(init_L[k], init_U[k]), D), 
@@ -33,6 +33,7 @@ xs = range(search_L[k], stop = search_U[k], length=300)
 ys = range(search_L[k], stop = search_U[k], length=300)
 z = [func((x,y)) for x in xs, y in ys]
 logz = -1*log.(z)
+zanim = 1*z
 # heatmap parameters
 cmap = cgrad(:cividis, 256)
 # grid parameters
