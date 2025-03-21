@@ -3,16 +3,16 @@ using DataFrames
 using Plots
 include("psoptim.jl")
 include("experiment_sim.jl")
-
+use_log = true
 # ----------------- #
 # ---- RUN PSO ---- #
 # ----------------- #
 # Simple R2, 5S setup 
 S = 10
 D = 2
-k = 4
+k = 2
 # with f1
-func = F[6]
+func = F[k]
 # fit particle swarm
 M = 250
 pso_fit = psoptim( rand(Uniform(init_L[k], init_U[k]), D), 
@@ -41,10 +41,11 @@ xtick_values = collect(range(search_L[k], stop = search_U[k], length=5))
 ytick_values = collect(range(search_L[k], stop = search_U[k], length=5))
 # extract swarm 
 swarm = pso_fit.X
+zval = use_log ? logz : z
 # build animation
 anim = @animate for i in 1:M
     # plot f as a heatmap
-    contour(xs, ys, logz,
+    contour(xs, ys, zval,
         legend = false,
         xlims = (search_L[k],  search_U[k]), 
         ylims = (search_L[k],  search_U[k]),
@@ -62,4 +63,4 @@ anim = @animate for i in 1:M
 
 end
 # save animation
-gif(anim, string("swarm_on_heatmap_f_", k, ".gif"), fps = 10)
+gif(anim, string("anims/swarm_on_heatmap_log", use_log, "f", k, ".gif"), fps = 10)
