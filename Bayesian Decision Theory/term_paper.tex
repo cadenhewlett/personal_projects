@@ -1,0 +1,126 @@
+\documentclass[letterpaper,12pt]{article}
+%% Always use 12pt - it is much easier to read
+%% Things written after '%' sign, are ignored by the latex editor - they are how to
+%% Anything mathematics related should be put in between '$' signs.
+%% Set some names and numbers here so we can use them below
+\newcommand{\myname}{} %%%%%%%%%%%%%%% ---------> 
+\newcommand{\mynumber}{Caden Hewlett}
+\newcommand{\hw}{} 
+%% There is a bit of stuff below which you should not have to change
+%%%%%%
+%% AMS mathematics packages - they contain many useful fonts and symbols.
+\usepackage{amsmath, amsfonts, amssymb, array, xcolor}
+%% The geometry package changes the margins to use more of the page, I suggest
+%% using it because standard latex margins are chosen for articles and letters,
+%% not homework.
+\usepackage[paper=letterpaper,left=25mm,right=25mm,top=3cm,bottom=25mm]{geometry}
+%% For details of how this package work, google the ``latex geometry
+%%
+%% Fancy headers and footers - make the document look nice
+\usepackage{fancyhdr} %% for details on how this work, search-engi
+\usepackage{framed}
+\usepackage{mathalpha}
+\usepackage{natbib}
+
+\pagestyle{fancy}
+%%
+%% The header
+\lhead{Philosophy 321} % course name as top-left
+\chead{Term Paper} % homework number in top-centre
+\rhead{ \myname \\ \mynumber }
+%% This is a little more complicated because we have used `` \\ '' to force a line
+%%
+%% The footer
+\lfoot{\myname} % name on bottom-left
+\cfoot{Page \thepage} % page in middle
+\rfoot{\mynumber} % student number on bottom-right
+%%
+%% These put horizontal lines between the main text and header and footer.
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+%%%
+% Some useful macros
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{enumerate}
+\usepackage{enumitem}
+\usepackage{upgreek}
+\usepackage{bbm}
+\usepackage{hyperref}
+\newcommand{\ZZ}{\mathbb{Z}}
+\usepackage{placeins}
+\newcommand{\FF}{\mathbb{F}}
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\QQ}{\mathbb{Q}}
+\newcommand{\CC}{\mathbb{C}}
+\newcommand{\NN}{\mathbb{N}}
+\newcommand{\ddx}{\dfrac{\text{d}}{\text{d}x}}
+\renewcommand\vec{\mathbf}
+\newcommand{\st}{\text{ s.t. } }
+\newcommand{\dee}[1]{\mathrm{d}#1}
+\newcommand{\diff}[2]{ \frac{\dee{#1}}{\dee{#2}} }
+\newcommand{\lt}{<}
+\newcommand{\gt}{>}
+\newcommand{\set}[1]{\left\{#1 \right\}}
+\newcommand{\dig}[1]{\left\langle{#1}\right\rangle}
+\newcommand{\closure}[1]{\overline{#1}}
+\newcommand{\interior}[1]{\mathrm{int}\left(#1\right)}
+\newcommand{\boundary}[1]{\delta\left(#1\right)}
+\newcommand{\ceiling}[1]{\left\lceil #1 \right\rceil}
+\newcommand{\given}{|}
+
+% Begin document
+\begin{document}
+\textit{Introduction}: In progress...
+
+\textit{Background}: Let $\mathcal{X}$ be the observation space, ${\Theta}$ be the parameter space, and $\mathcal{A}$ be the action space.  For simplicity, we allow all of these spaces to be discrete.  The observations $x \in \mathcal{X}$ are connected to the parameter $\theta \in \Theta$ by the probability mass function $p(x \given \theta)$, referred to as the data-generating process (DGP) \cite{tu2004data}. In a discrete setting, the DGP describes the probability of an observation $x \in \mathcal{X}$ under a given parameter $\theta$. The primary objective of statistical inference is to infer underlying properties of the DGP \cite{upton2008oxford}. From the perspective of decision theory, the decision $a \in \mathcal{A}$ will be to propose a function $\upalpha(x)$ to estimate the parameter $\theta$ as precisely as possible. To illustrate this concept, suppose we are flipping a fair coin and wish to recover the parameter $\theta$ corresponding to the proportion of heads, $\theta = 0.5$. Thus, the DGP $p(x \given \theta)$ is a Bernoulli distribution with parameter $\theta$. One action $a_1 \in \mathcal{A}$ is to propose the estimator $\upalpha_1(x) = \frac{1}{n}\sum_{i = 1}^n x_i$ (where $n$ is the number of flips) whereas $a_2 \in \mathcal{A}$ is to naively propose $\upalpha_2 (x) = 1$ (every flip is heads). It can be shown\footnote{ Given $p(x\given \theta) = \prod_{i = 1}^n\theta^{x_i}(1-\theta)^{1-x_i}$, the log-likelihood of the $n$ observations is $\ell(x, \theta) = \log(\theta) \sum_{i = 1}^n x_i + \log(1 - \theta) \sum_{i = 1}^n (1 - x_i)$. Maximizing wrt $\theta$ yields $\hat{\theta}_{\text{MLE}} = \frac{1}{n}\sum_{i = 1}^n x_i = \upalpha_1(x)$.} that $a_1$ proposes an estimator which maximizes the likelihood of the observed data under the DGP \cite{rossi2018}, whereas $a_2$'s estimator is clearly biased, thus trivially $a_1 \succ a_2$. Unless necessarily distinct, we henceforth use estimators $\upalpha$ and the actions $a$ proposing them interchangeably. 
+
+To quantify the preference orderings beyond the simple heuristics mentioned in the coin-flipping case, statisticians leverage loss functions  \cite{wald1950}, which we denote $\mathcal{L}(\theta, \upalpha)$. The loss function represents the error associated with proposing a "bad" evaluation of the $\theta$ (or function of $\theta$) of interest. Thus, the best evaluation of this function is a zero loss; therefore $\mathcal{L}(\theta, \upalpha) \geq 0$ \cite{robert2007bayesian}. From a decision-theoretic perspective, the objective of the decision-maker is to propose an estimator $\upalpha$ which minimizes this loss. Since the true value of parameter $\theta$ is often unknown, the preference ordering of estimators is often dictated by their \textit{expected} loss. However, exactly how we define \textit{expected} relies upon whether one takes a {frequentist} or {Bayesian} approach. 
+
+\textit{Frequentism and Minimax}: Under the frequentist paradigm, the data $x \in \mathcal{X}$ are considered random because it arises from repeated sampling via the DGP $p(x \given \theta)$. Meanwhile, $\theta$ is treated as a fixed but unknown constant in the parameter space $\Theta$. In the coin-flipping example, a frequentist would assume that the coin has a fixed (unknown) probability $\theta$ of landing heads, and each flip outcome is then governed by $p(x\given \theta)$. Thus, to evaluating a proposed estimator $\upalpha$, the frequentist approach focuses on expected loss, akin to how Peterson \cite{peterson2017} considers the expected utility. Specifically, we define the expected loss (EL) as the product of the probability of observing $x \in \mathcal{X}$ and the loss associated with estimating $\theta$ with $\upalpha(x)$,
+\begin{equation}
+ \text{EL}(\theta, \upalpha) = \mathbb{E}_{\theta}[\mathcal{L}(\theta, \upalpha)] = \sum_{x \in \mathcal{X}} \mathcal{L}\big( \theta, \upalpha(x) \big) p(x \given \theta)  \label{eq:freqexpectedloss}
+\end{equation}
+The above is also referred to as a risk function \cite{nikulin2001}. From this definition of expected loss, we introduce the concept of ``minimax" through a game-theoretic analogy of a game against Nature. In this framework, our goal is to select an estimator $\upalpha \in \mathcal{A}$ that \textit{minimizes} our expected loss. Meanwhile, Nature acts as an adversary, selecting a parameter $\theta \in \Theta$ (i.e. a ``state of the world") in an attempt to \textit{maximize} our expected loss \cite{ulansky2021}. The expected loss in such a game is known as the ``minimax risk", which we define as
+\begin{equation}
+\overline{{R}} = \min_{\upalpha \in \mathcal{A}} \max_{\theta \in \Theta} \text{EL}(\theta, \upalpha) \label{eq:minimaxrisk}
+\end{equation}
+The estimator/decision rule $\upalpha \in \mathcal{A}$ that achieves the minimax risk is known as the minimax estimator. While the minimax risk $\overline{R}$ is occasionally criticized as being overly conservative \cite{peterson2017}, the ability of an estimator to be the best in the worst case scenario (which we refer to as the ``minimax guarantee") is desirable for many real-world applications including management of financial portfolios \cite{DENG2005278}.
+
+
+Having defined the minimax risk in \hyperref[eq:minimaxrisk]{Equation (2)} and the corresponding guarantee, we now turn to \textit{The Bayesian Choice} \cite{robert2007bayesian}, in which Christian Robert demonstrates that under certain “least favorable” priors, Bayesian procedures achieve a Bayes risk that coincides with (or even improves upon) this frequentist minimax bound.
+\\ \\ 
+\textit{Remaining Work}
+\begin{enumerate}\item{Introduce Robert's Argument and proof. (Bayesianism, Integrated Risk, proof of Integrated Risk $\leq$ Minimax Risk using weighted sum vs. set maxima)} 
+\item{Introduce Stark's Counterargument: How the prior $\pi(\theta)$ is subjective, and Robert's proof is trivial since you are ``adding information" to the risk problem which was previously constrained by objectivity.}
+\item{Introduce the Bayesian Rebuttal: Namely, the subjectivity of choice of loss function $\mathcal{L}(\dots)$ implies the frequentist construction of the problem isn't operating under such ``objective constraints," so given that subjective claims need to be made on the state of Nature, a Bayesian approach gives provable optimality. }
+\item{Conclusion and Introduction }
+ \end{enumerate}
+ %Formally, by examining how integrated Bayesian risk can match the worst-case criterion, Robert’s analysis shows that Bayesian decision theory is “at least as good” as the frequentist minimax approach, yet retains the interpretive benefits of a prior-based framework.
+%% transition into Christian Robert’s book The Bayesian Choice, in which he uses minimaxity of integrated bayesian risk as an argument in favour of a Bayesian decision-theoretic approach over a frequentist one. 
+%  Christian Robert’s book The Bayesian Choice
+% Roberts' section:
+% Intro to bayesian philosophy (what is random what isn't)
+% Connection to coin example again
+% Introduce integrated risk (maybe posterior expected loss)
+%% Frequentist risk averaged over the values of theta according to their posterior distribution
+% Introduce Bayes Estimator (Definition 2.3.3)
+%% and Bayes risk as r(\pi) = r(\pi, \alpha_{\text{B}})
+%% r(\pi, \alpha) = \sum_{\theta \in \Theta}\sum_{x \in \mathcal{X}} \mathcal{L}\big(\theta, \alpha(x) \big)p_{\mathcal{X}\mid\Theta}(x \mid \theta) p_{\Theta}(\theta)
+%% or using pi notation
+%% \alpha_{\text{B}} = \underset{ {\alpha \in \mathcal{A}} }{\text{argmin}}\sum_{\theta \in \Theta}\sum_{x \in \mathcal{X}} \mathcal{L}\big(\theta, \alpha(x) \big)p_{\mathcal{X}\mid\Theta}(x \mid \theta) \pi(\theta) \\
+% Demonstrate using least favourable prior that
+% the Bayes risk is always smaller than the minmax risk
+%% \max_{\pi \in \Pi}r(\pi, \alpha_{\text{B}}) \leq R(\theta, \overline{\alpha}_{\text{F}})
+% using weighted sum <= maximum
+% making a decision based on the expected value of the loss function; 
+%  represents the loss (or error) owing to a bad evaluation of the function of θ of interest, and therefore that even the best evaluation of this function, i.e.,
+% when θ is known, can induce at best a null loss.
+\bibliographystyle{unsrt}
+\bibliography{final_paper_bib}  
+% Introduce Minimax Risk
+%% Introduce minimax estimator
+%% \overline{\alpha}_{\text{F}} = \text{argmin}_{\alpha \in \mathcal{A}} \max_{\theta \in \Theta}\sum_{x \in \mathcal{X}}\mathcal{L}(\theta , \alpha(x))f(x\mid \theta)
+%% "minimax guarantee" in the worst-case scenario
+
+
+\end{document}
