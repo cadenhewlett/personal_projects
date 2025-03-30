@@ -1,0 +1,81 @@
+\documentclass[letterpaper,12pt]{article}
+%% Always use 12pt - it is much easier to read
+%% Things written after '%' sign, are ignored by the latex editor - they are how to
+%% Anything mathematics related should be put in between '$' signs.
+%% Set some names and numbers here so we can use them below
+\newcommand{\myname}{} %%%%%%%%%%%%%%% ---------> 
+\newcommand{\mynumber}{Caden Hewlett}
+\newcommand{\hw}{} 
+%% There is a bit of stuff below which you should not have to change
+%%%%%%
+%% AMS mathematics packages - they contain many useful fonts and symbols.
+\usepackage{amsmath, amsfonts, amssymb, array, xcolor}
+%% The geometry package changes the margins to use more of the page, I suggest
+%% using it because standard latex margins are chosen for articles and letters,
+%% not homework.
+\usepackage[paper=letterpaper,left=25mm,right=25mm,top=3cm,bottom=25mm]{geometry}
+%% For details of how this package work, google the ``latex geometry
+%%
+%% Fancy headers and footers - make the document look nice
+\usepackage{fancyhdr} %% for details on how this work, search-engi
+\usepackage{framed}
+\usepackage{mathalpha}
+\usepackage{natbib}
+
+\pagestyle{fancy}
+%%
+%% The header
+\lhead{Philosophy 321} % course name as top-left
+\chead{Term Paper} % homework number in top-centre
+\rhead{ \myname \\ \mynumber }
+%% This is a little more complicated because we have used `` \\ '' to force a line
+%%
+%% The footer
+\lfoot{\myname} % name on bottom-left
+\cfoot{Page \thepage} % page in middle
+\rfoot{\mynumber} % student number on bottom-right
+%%
+%% These put horizontal lines between the main text and header and footer.
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+%%%
+% Some useful macros
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{enumerate}
+\usepackage{enumitem}
+\usepackage{upgreek}
+\usepackage{bbm}
+\usepackage{hyperref}
+\newcommand{\ZZ}{\mathbb{Z}}
+\usepackage{placeins}
+\newcommand{\FF}{\mathbb{F}}
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\QQ}{\mathbb{Q}}
+\newcommand{\CC}{\mathbb{C}}
+\newcommand{\NN}{\mathbb{N}}
+\newcommand{\ddx}{\dfrac{\text{d}}{\text{d}x}}
+\renewcommand\vec{\mathbf}
+\newcommand{\st}{\text{ s.t. } }
+\newcommand{\dee}[1]{\mathrm{d}#1}
+\newcommand{\diff}[2]{ \frac{\dee{#1}}{\dee{#2}} }
+\newcommand{\lt}{<}
+\newcommand{\gt}{>}
+\newcommand{\set}[1]{\left\{#1 \right\}}
+\newcommand{\dig}[1]{\left\langle{#1}\right\rangle}
+\newcommand{\closure}[1]{\overline{#1}}
+\newcommand{\interior}[1]{\mathrm{int}\left(#1\right)}
+\newcommand{\boundary}[1]{\delta\left(#1\right)}
+\newcommand{\ceiling}[1]{\left\lceil #1 \right\rceil}
+\newcommand{\given}{|}
+
+% Begin document
+\begin{document}
+	Let $A = \{a_1, a_2, \dots, a_n\} \subseteq \mathbb{R}$ and let $W = \{w_1, w_2, \dots, w_n\}$, be non-negative real weights such that $\sum_{i = 1}^n w_i = 1$ for $n \in \mathbb{N}$. Since $A$ is finite, let $\tilde{a}=\max(A)$. We claim that $\sum_{i = 1}^n a_i w_i \leq \tilde{a}$.
+	\begin{proof}
+		We proceed by contradiction. Assume to the contrary that $\sum_{i = 1}^n a_i w_i > \tilde{a}$. Note that since $\sum_{i = 1}^n w_i = 1$ by construction, $\tilde{a} = \tilde{a}\sum_{i = 1}^n w_i = \sum_{i = 1}^n w_i\tilde{a}$ by the distributive property of summation. Since $\sum_{i = 1}^n a_i w_i > \tilde{a}$, it follows that 
+		$
+	    \sum_{i = 1}^n a_i w_i -  \sum_{i = 1}^n w_i\tilde{a} > 0$, and therefore  $\sum_{i = 1}^n w_i (a_i - \tilde{a}) > 0$.
+		Denote the set $\mathcal{J}$ as $\mathcal{J} = \{j \in [1,n] \mid w_j > 0\}$. Since $\mathcal{J} \subseteq [1,n]$, it follows that $\sum_{j \in \mathcal{J}} w_j (a_j - \tilde{a}) > 0$. Since this weighted sum of differences is strictly positive, it follows that $\exists k \in \mathcal{J}$ such that $(a_k - \tilde{a}) > 0$. For this choice of $k$, we have $a_k > \tilde{a}$. However, since $\mathcal{J} \subseteq [1,n]$ it follows that $a_k \in A$, contradicting the fact that $\max(A) = \tilde{a}$. Therefore it cannot be the case that $\sum_{i = 1}^n a_i w_i > \tilde{a}$, implying $\sum_{i = 1}^n a_i w_i \leq \tilde{a}$ as required.
+	\end{proof} 
+	
+\end{document}

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.3) (preloaded format=pdflatex 2025.3.27)  28 MAR 2025 12:39
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.3) (preloaded format=pdflatex 2025.3.27)  29 MAR 2025 22:30
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -386,6 +386,9 @@ Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
 )
 \Hy@SectionHShift=\skip77
 )
+(C:\Users\thetr\AppData\Local\Programs\MiKTeX\tex/latex/setspace\setspace.sty
+Package: setspace 2022/12/04 v6.7b set line spacing
+)
 (C:\Users\thetr\AppData\Local\Programs\MiKTeX\tex/latex/placeins\placeins.sty
 Package: placeins 2005/04/18  v 2.2
 )
@@ -397,24 +400,24 @@ File: l3backend-pdftex.def 2024-05-08 L3 backend support: PDF output (pdfTeX)
 ) (term_paper.aux)
 \openout1 = `term_paper.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 72.
-LaTeX Font Info:    ... okay on input line 72.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 72.
-LaTeX Font Info:    ... okay on input line 72.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 72.
-LaTeX Font Info:    ... okay on input line 72.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 72.
-LaTeX Font Info:    ... okay on input line 72.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 72.
-LaTeX Font Info:    ... okay on input line 72.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 72.
-LaTeX Font Info:    ... okay on input line 72.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 72.
-LaTeX Font Info:    ... okay on input line 72.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 72.
-LaTeX Font Info:    ... okay on input line 72.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 72.
-LaTeX Font Info:    ... okay on input line 72.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 73.
+LaTeX Font Info:    ... okay on input line 73.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 73.
+LaTeX Font Info:    ... okay on input line 73.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 73.
+LaTeX Font Info:    ... okay on input line 73.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 73.
+LaTeX Font Info:    ... okay on input line 73.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 73.
+LaTeX Font Info:    ... okay on input line 73.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 73.
+LaTeX Font Info:    ... okay on input line 73.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 73.
+LaTeX Font Info:    ... okay on input line 73.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 73.
+LaTeX Font Info:    ... okay on input line 73.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 73.
+LaTeX Font Info:    ... okay on input line 73.
 
 (C:\Users\thetr\AppData\Local\Programs\MiKTeX\tex/context/base/mkii\supp-pdf.mk
 ii
@@ -465,18 +468,18 @@ ii
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-Package hyperref Info: Link coloring OFF on input line 72.
+Package hyperref Info: Link coloring OFF on input line 73.
 (term_paper.out) (term_paper.out)
 \@outlinefile=\write3
 \openout3 = `term_paper.out'.
 
-LaTeX Font Info:    Trying to load font information for U+msa on input line 75.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 78.
 
 
 (C:\Users\thetr\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 75.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 78.
 
 
 (C:\Users\thetr\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsb.fd
@@ -493,11 +496,6 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 [1{C:/Users/thetr/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}
 
 ]
-Underfull \hbox (badness 10000) in paragraph at lines 90--93
-
- []
-
-(term_paper.bbl
 
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
@@ -506,7 +504,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-6.85004pt}.
 
-[2])
+[2]
 
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
@@ -515,7 +513,25 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-6.85004pt}.
 
-[3] (term_paper.aux)
+[3] (term_paper.bbl
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 18.85004pt, for example:
+(fancyhdr)                \setlength{\headheight}{18.85004pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-6.85004pt}.
+
+[4])
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 18.85004pt, for example:
+(fancyhdr)                \setlength{\headheight}{18.85004pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-6.85004pt}.
+
+[5] (term_paper.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
@@ -524,35 +540,39 @@ Package rerunfilecheck Info: File `term_paper.out' has not changed.
 (rerunfilecheck)             Checksum: D41D8CD98F00B204E9800998ECF8427E;0.
  ) 
 Here is how much of TeX's memory you used:
- 12095 strings out of 473523
- 186407 string characters out of 5714630
- 613908 words of memory out of 5000000
- 35143 multiletter control sequences out of 15000+600000
+ 12142 strings out of 473523
+ 187394 string characters out of 5714630
+ 609297 words of memory out of 5000000
+ 35183 multiletter control sequences out of 15000+600000
  567832 words of font info for 71 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,12n,79p,2087b,574s stack positions out of 10000i,1000n,20000p,200000b,200000s
-<C:/Users/thetr/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/
-cmbx12.pfb><C:/Users/thetr/AppData/Local/Programs/MiKTeX/fonts/type1/public/ams
-fonts/cm/cmex10.pfb><C:/Users/thetr/AppData/Local/Programs/MiKTeX/fonts/type1/p
-ublic/amsfonts/cm/cmmi10.pfb><C:/Users/thetr/AppData/Local/Programs/MiKTeX/font
-s/type1/public/amsfonts/cm/cmmi12.pfb><C:/Users/thetr/AppData/Local/Programs/Mi
-KTeX/fonts/type1/public/amsfonts/cm/cmmi5.pfb><C:/Users/thetr/AppData/Local/Pro
-grams/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi7.pfb><C:/Users/thetr/AppData/L
-ocal/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/Users/thetr/A
-ppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users
-/thetr/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr12.pfb><
-C:/Users/thetr/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr
-7.pfb><C:/Users/thetr/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts
-/cm/cmr8.pfb><C:/Users/thetr/AppData/Local/Programs/MiKTeX/fonts/type1/public/a
-msfonts/cm/cmsy10.pfb><C:/Users/thetr/AppData/Local/Programs/MiKTeX/fonts/type1
-/public/amsfonts/cm/cmsy7.pfb><C:/Users/thetr/AppData/Local/Programs/MiKTeX/fon
-ts/type1/public/amsfonts/cm/cmsy8.pfb><C:/Users/thetr/AppData/Local/Programs/Mi
-KTeX/fonts/type1/public/amsfonts/cm/cmti12.pfb><C:/Users/thetr/AppData/Local/Pr
-ograms/MiKTeX/fonts/type1/public/amsfonts/euler/eurm10.pfb><C:/Users/thetr/AppD
-ata/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on term_paper.pdf (3 pages, 195355 bytes).
+ 75i,11n,79p,2500b,578s stack positions out of 10000i,1000n,20000p,200000b,200000s
+
+pdfTeX warning (dest): name{Hfootnote.1} has been referenced but does not exist
+, replaced by a fixed one
+
+<C:/Users/thetr/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cm
+bx12.pfb><C:/Users/thetr/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfo
+nts/cm/cmex10.pfb><C:/Users/thetr/AppData/Local/Programs/MiKTeX/fonts/type1/pub
+lic/amsfonts/cm/cmmi10.pfb><C:/Users/thetr/AppData/Local/Programs/MiKTeX/fonts/
+type1/public/amsfonts/cm/cmmi12.pfb><C:/Users/thetr/AppData/Local/Programs/MiKT
+eX/fonts/type1/public/amsfonts/cm/cmmi5.pfb><C:/Users/thetr/AppData/Local/Progr
+ams/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi7.pfb><C:/Users/thetr/AppData/Loc
+al/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/Users/thetr/App
+Data/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/t
+hetr/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:
+/Users/thetr/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr7.
+pfb><C:/Users/thetr/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/c
+m/cmr8.pfb><C:/Users/thetr/AppData/Local/Programs/MiKTeX/fonts/type1/public/ams
+fonts/cm/cmsy10.pfb><C:/Users/thetr/AppData/Local/Programs/MiKTeX/fonts/type1/p
+ublic/amsfonts/cm/cmsy7.pfb><C:/Users/thetr/AppData/Local/Programs/MiKTeX/fonts
+/type1/public/amsfonts/cm/cmsy8.pfb><C:/Users/thetr/AppData/Local/Programs/MiKT
+eX/fonts/type1/public/amsfonts/cm/cmti12.pfb><C:/Users/thetr/AppData/Local/Prog
+rams/MiKTeX/fonts/type1/public/amsfonts/euler/eurm10.pfb><C:/Users/thetr/AppDat
+a/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
+Output written on term_paper.pdf (5 pages, 200872 bytes).
 PDF statistics:
- 138 PDF objects out of 1000 (max. 8388607)
- 21 named destinations out of 1000 (max. 500000)
+ 148 PDF objects out of 1000 (max. 8388607)
+ 24 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
