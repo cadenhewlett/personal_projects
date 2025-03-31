@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.3) (preloaded format=pdflatex 2025.3.27)  29 MAR 2025 22:30
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.3) (preloaded format=pdflatex 2025.3.27)  31 MAR 2025 11:16
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -540,13 +540,17 @@ Package rerunfilecheck Info: File `term_paper.out' has not changed.
 (rerunfilecheck)             Checksum: D41D8CD98F00B204E9800998ECF8427E;0.
  ) 
 Here is how much of TeX's memory you used:
- 12142 strings out of 473523
- 187394 string characters out of 5714630
- 609297 words of memory out of 5000000
- 35183 multiletter control sequences out of 15000+600000
+ 12148 strings out of 473523
+ 187468 string characters out of 5714630
+ 608337 words of memory out of 5000000
+ 35187 multiletter control sequences out of 15000+600000
  567832 words of font info for 71 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,11n,79p,2500b,578s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,12n,79p,2482b,570s stack positions out of 10000i,1000n,20000p,200000b,200000s
+
+pdfTeX warning (dest): name{Hfootnote.2} has been referenced but does not exist
+, replaced by a fixed one
+
 
 pdfTeX warning (dest): name{Hfootnote.1} has been referenced but does not exist
 , replaced by a fixed one
@@ -570,9 +574,9 @@ ublic/amsfonts/cm/cmsy7.pfb><C:/Users/thetr/AppData/Local/Programs/MiKTeX/fonts
 eX/fonts/type1/public/amsfonts/cm/cmti12.pfb><C:/Users/thetr/AppData/Local/Prog
 rams/MiKTeX/fonts/type1/public/amsfonts/euler/eurm10.pfb><C:/Users/thetr/AppDat
 a/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on term_paper.pdf (5 pages, 200872 bytes).
+Output written on term_paper.pdf (5 pages, 205020 bytes).
 PDF statistics:
- 148 PDF objects out of 1000 (max. 8388607)
- 24 named destinations out of 1000 (max. 500000)
+ 153 PDF objects out of 1000 (max. 8388607)
+ 26 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

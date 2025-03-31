@@ -1,4 +1,4 @@
-\begin{thebibliography}{1}
+\begin{thebibliography}{10}
 
 \bibitem{tu2004data}
 Jun Tu and Guofu Zhou.
@@ -55,5 +55,10 @@ Xiao-Tie Deng, Zhong-Fei Li, and Shou-Yang Wang.
   2005.
 \newblock Metaheuristics and Worst-Case Guarantee Algorithms: Relations,
   Provable Properties and Applications.
+
+\bibitem{berger1985}
+James~O. Berger.
+\newblock {\em Statistical Decision Theory and Bayesian Analysis}.
+\newblock Springer-Verlag, New York, 2nd edition, 1985.
 
 \end{thebibliography}
