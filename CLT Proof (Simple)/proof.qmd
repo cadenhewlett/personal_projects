@@ -123,7 +123,7 @@ K_2[X_i] &= \dfrac{d^2}{d^2t}K_{X_i}\Big(\dfrac{t}{\sqrt{n}}\Big) \Big|_{t = 0} 
 \end{aligned}
 $$
 
-Generalizing this, we have the following. The elipses on the left hand sidet get "derivated out," since they have order less than $m$. Contrarily, the elipses on the right-hand side have order higher than $m$, thus their derivatives contain a factor of $t$ and and are eliminated when evaluated at $t = 0$. This is one of the many ways where the "central" aspect of the central limit theorem is so important! (The other, of course, is the centering of the mean of the random variables at zero.)
+Generalizing this, we have the following. The ellipses on the left hand side get "derivated out," since they have order less than $m$. Contrarily, the ellipses on the right-hand side have order higher than $m$, thus their derivatives contain a factor of $t$ and and are eliminated when evaluated at $t = 0$. This is one of the many ways where the "central" aspect of the central limit theorem is so important! (The other, of course, is the centering of the mean of the random variables at zero.)
 $$
 K_m[X_i] = \dfrac{d^m}{d^mt}K_{X_i}\Big(\dfrac{t}{\sqrt{n}}\Big) \Big|_{t = 0} = \dfrac{d^m}{d^mt}\Big(\dots + \dfrac{1}{m}\Big( \dfrac{t}{\sqrt{n}} \Big)^m (\mathbb{E}[X^m] + \dots) + \dots \Big) = \dfrac{K_m[X]}{\sqrt{n}^m}
 $$
@@ -156,7 +156,7 @@ Let $Y \sim \mathcal{N}(0, \sigma^2)$. Thus the probability density function $f_
 $$
 f_Y(y) = \dfrac{1}{\sqrt{2 \pi\sigma^2}}\exp\Big( -\dfrac{y^2}{2\sigma^2} \Big)
 $$
-Now, recalling that the MGF is $M_Y(t) = \mathbb{E}[e^{tY}]$, by the Law of the Unconcious Statistician we have
+Now, recalling that the MGF is $M_Y(t) = \mathbb{E}[e^{tY}]$, by the Law of the Unconscious Statistician we have
 $$
 \begin{aligned}
 M_Y(t) &= \mathbb{E}[e^{tY}]  \\
@@ -185,4 +185,4 @@ Then, we recover the CGF directly by taking the natural logarithm of the MGF
 $$
 K_X(t) = \log M_X(t) = \log(e^{\frac{1}{2}t^2\sigma^2}) = \frac{1}{2}t^2 \sigma^2
 $$
-Crucially, this is **the same** as equation $(\ast)$! Since both functions are defined on an open interval containing zero and have the same CGF, this implies their MGFs are the same and thus they are \underline{equal in distribution} as $n \to \infty$. This proves the Central Limit Theorem. $\square$
+Crucially, this is **the same** as equation $(\ast)$! Since both functions are defined on an open interval containing zero and have the same CGF, this implies their MGFs are the same and thus they are \underline{equal in distribution} as $n \to \infty$. Thus, $\frac{1}{\sqrt{n}} \sum_{i = 1}^n X_i \overset{\text{dist}}{\longrightarrow} \mathcal{N}(0, \sigma^2)$, as required. This proves the Central Limit Theorem. $\square$
