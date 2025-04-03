@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.3) (preloaded format=pdflatex 2025.3.27)  31 MAR 2025 11:28
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.3) (preloaded format=pdflatex 2025.3.27)  2 APR 2025 18:36
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -513,7 +513,14 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-6.85004pt}.
 
-[3] (term_paper.bbl
+[3]
+
+LaTeX Warning: Hyper reference `eq:PEL' on page 4 undefined on input line 103.
+
+
+LaTeX Warning: Hyper reference `eq:PEL' on page 4 undefined on input line 103.
+
+
 
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
@@ -522,7 +529,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-6.85004pt}.
 
-[4])
+[4] (term_paper.bbl
 
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
@@ -531,19 +538,32 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-6.85004pt}.
 
-[5] (term_paper.aux)
+[5])
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 18.85004pt, for example:
+(fancyhdr)                \setlength{\headheight}{18.85004pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-6.85004pt}.
+
+[6] (term_paper.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
+
+
+LaTeX Warning: There were undefined references.
+
 Package rerunfilecheck Info: File `term_paper.out' has not changed.
 (rerunfilecheck)             Checksum: D41D8CD98F00B204E9800998ECF8427E;0.
  ) 
 Here is how much of TeX's memory you used:
- 12148 strings out of 473523
- 187468 string characters out of 5714630
+ 12151 strings out of 473523
+ 187491 string characters out of 5714630
  608337 words of memory out of 5000000
- 35187 multiletter control sequences out of 15000+600000
+ 35188 multiletter control sequences out of 15000+600000
  567832 words of font info for 71 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  75i,12n,79p,2482b,570s stack positions out of 10000i,1000n,20000p,200000b,200000s
@@ -574,9 +594,9 @@ ublic/amsfonts/cm/cmsy7.pfb><C:/Users/thetr/AppData/Local/Programs/MiKTeX/fonts
 eX/fonts/type1/public/amsfonts/cm/cmti12.pfb><C:/Users/thetr/AppData/Local/Prog
 rams/MiKTeX/fonts/type1/public/amsfonts/euler/eurm10.pfb><C:/Users/thetr/AppDat
 a/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on term_paper.pdf (5 pages, 205017 bytes).
+Output written on term_paper.pdf (6 pages, 210519 bytes).
 PDF statistics:
- 153 PDF objects out of 1000 (max. 8388607)
- 26 named destinations out of 1000 (max. 500000)
+ 162 PDF objects out of 1000 (max. 8388607)
+ 28 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
