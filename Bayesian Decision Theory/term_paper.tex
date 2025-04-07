@@ -1,27 +1,31 @@
 \documentclass[letterpaper,12pt]{article}
-%% Always use 12pt - it is much easier to read
-%% Things written after '%' sign, are ignored by the latex editor - they are how to
-%% Anything mathematics related should be put in between '$' signs.
-%% Set some names and numbers here so we can use them below
-\newcommand{\myname}{} %%%%%%%%%%%%%%% ---------> 
+%% 
+\newcommand{\myname}{}
 \newcommand{\mynumber}{Caden Hewlett}
 \newcommand{\hw}{} 
-%% There is a bit of stuff below which you should not have to change
-%%%%%%
-%% AMS mathematics packages - they contain many useful fonts and symbols.
-\usepackage{amsmath, amsfonts, amssymb, array, xcolor}
-%% The geometry package changes the margins to use more of the page, I suggest
-%% using it because standard latex margins are chosen for articles and letters,
-%% not homework.
-\usepackage[paper=letterpaper,left=25mm,right=25mm,top=3cm,bottom=25mm]{geometry}
-%% For details of how this package work, google the ``latex geometry
 %%
-%% Fancy headers and footers - make the document look nice
-\usepackage{fancyhdr} %% for details on how this work, search-engi
+\usepackage{amsmath, amsfonts, amssymb, array, xcolor}
+%%
+\usepackage[paper=letterpaper,left=25mm,right=25mm,top=3cm,bottom=25mm]{geometry}
+%% 
+\usepackage{fancyhdr} 
 \usepackage{framed}
 \usepackage{mathalpha}
 \usepackage{natbib}
+\usepackage{listings}
 
+\lstset{
+	language=R,
+	basicstyle=\ttfamily\small,
+	backgroundcolor=\color{gray!10},
+	frame=single,
+	numbers=left,
+	numberstyle=\tiny,
+	keywordstyle=\color{blue},
+	commentstyle=\color{gray},
+	stringstyle=\color{red},
+	breaklines=true
+}
 \pagestyle{fancy}
 %%
 %% The header
@@ -68,79 +72,184 @@
 \newcommand{\boundary}[1]{\delta\left(#1\right)}
 \newcommand{\ceiling}[1]{\left\lceil #1 \right\rceil}
 \newcommand{\given}{|}
+\newcommand{\emdash}{—}
 
 % Begin document
 \begin{document}
 	\doublespacing
-	
-\textit{Introduction}: In progress...
 
-\textit{Background}: To introduce the nomenclature, we let $\mathcal{X}$ be the observation space, representing all possible data you might observe. Further, we let ${\Theta}$ be the parameter space, capturing all conceivable ``states of nature." Finally, we let $\mathcal{A}$ be the action space, consisting of all actions or estimators you can choose in response to the observed data. For this paper, an action $a \in \mathcal{A}$ generally implies estimating $\theta \in \Theta$ with a certain formula $\upalpha(x)$ known as the \textit{estimator}. For simplicity, we allow all of these spaces to be discrete. The observations $x \in \mathcal{X}$ are connected to the parameter $\theta \in \Theta$ by the probability mass function $p(x \given \theta)$, referred to as the data-generating process (DGP) \cite{tu2004data}. In a discrete setting, the DGP describes the probability of an observation $x \in \mathcal{X}$ under a given parameter $\theta$. The primary objective of statistical inference is to infer underlying properties of the DGP \cite{upton2008oxford}. From a decision-theoretic perspective, the decision $a \in \mathcal{A}$ will propose a function $\upalpha(x)$ to estimate the parameter $\theta$ as precisely as possible. To illustrate this concept, suppose we are flipping a fair coin and wish to recover the parameter $\theta$ corresponding to the proportion of heads, $\theta = 0.5$. Thus, the DGP $p(x \given \theta)$ is a Bernoulli distribution with parameter $\theta$. One action $a_1 \in \mathcal{A}$ is to propose the estimator $\upalpha_1(x) = \frac{1}{n}\sum_{i = 1}^n x_i$ (where $n$ is the number of flips) whereas $a_2 \in \mathcal{A}$ is to naively propose $\upalpha_2 (x) = 1$ (every flip is heads). It can be shown\footnote{ Given $p(x\given \theta) = \prod_{i = 1}^n\theta^{x_i}(1-\theta)^{1-x_i}$, the log-likelihood of the $n$ observations is $\ell(x, \theta) = \log(\theta) \sum_{i = 1}^n x_i + \log(1 - \theta) \sum_{i = 1}^n (1 - x_i)$. Maximizing wrt $\theta$ yields $\hat{\theta}_{\text{MLE}} = \frac{1}{n}\sum_{i = 1}^n x_i = \upalpha_1(x)$.} that $a_1$ proposes an estimator which maximizes the likelihood of the observed data under the DGP \cite{rossi2018}, whereas $a_2$'s estimator is biased, thus trivially $a_1 \succ a_2$. Unless necessarily distinct, we henceforth use estimators $\upalpha$ and the actions $a$ proposing them interchangeably. 
+In statistical inference, the role of estimators is to recover unknown parameters from observed data, and statisticians leverage decision theory to evaluate these estimators by comparing their risk; however, like most problems in statistics, there is debate on whether a Bayesian or frequentist approach is superior. This essay advocates for Christian Robert's view, asserting that a well-chosen prior not only encapsulates Nature's inherent uncertainty and allows the Bayes risk to be, at worst, equal to and often lower than the minimax risk found in frequentist methods. To support Robert's claim, we begin by outlining the core principles of discrete statistical inference concerning decision theory, including estimators, parameters, expected loss, and minimax risk. We then introduce the Bayesian framework by detailing the role of priors and integrated risk, culminating in a formal proof that the Bayes risk does not exceed the minimax limit. Finally, we defend against Philip Stark's critique regarding the subjectivity of priors by demonstrating that some degree of subjectivity is unavoidable in decision theory. 
 
-To quantify the preference orderings beyond the simple heuristics mentioned in the coin-flipping case, statisticians leverage loss functions  \cite{wald1950}, which we denote $\mathcal{L}(\theta, \upalpha)$. The loss function represents the error associated with proposing a ``bad" estimation of the $\theta$ (or function of $\theta$) of interest. Thus, the best evaluation of this function is a zero loss; therefore, $\mathcal{L}(\theta, \upalpha) \geq 0$ \cite{robert2007bayesian}. From a decision-theoretic perspective, the objective of the decision-maker is to propose an estimator $\upalpha$ which minimizes this loss. Since the actual value of parameter $\theta$ is often unknown, statisticians base their ordering of estimators on the \textit{expected} loss. However, precisely how we define \textit{expected} relies upon whether one takes a {frequentist} or {Bayesian} approach. 
+We begin by defining some of the fundamental elements of statistical decision theory. To introduce the nomenclature, we let $\mathcal{X}$ be the observation space, representing all possible data you might observe. Further, we let ${\Theta}$ be the parameter space, capturing all conceivable ``states of nature." Finally, we let $\mathcal{A}$ be the action space, consisting of all actions or estimators you can choose; we allow all of these spaces to be finite and discrete for simplicity. For this paper, an action $a \in \mathcal{A}$ generally implies estimating $\theta \in \Theta$ with a certain formula $\upalpha(x)$ known as the \textit{estimator}. The observations $x \in \mathcal{X}$ are connected to the parameter $\theta \in \Theta$ by the probability mass function $p(x \given \theta)$, referred to as the data-generating process (DGP) \cite{tu2004data}. In a discrete setting, the DGP describes the probability of an observation $x \in \mathcal{X}$ under a given parameter $\theta$. The primary objective of statistical inference is to infer underlying properties of the DGP and $\theta$ \cite{upton2008oxford}. To illustrate the connection to decision theory\phantomsection\label{ex:1}, suppose you flip a coin $n$ times and wish to estimate the parameter $\theta$ corresponding to the true proportion of times your coin lands heads. In this case, the DGP $p(x \given \theta)$ defines a process where, for each coin flip, there is a probability $\theta$ of the coin landing heads and a probability $1- \theta$ of landing tails. One action $a_1 \in \mathcal{A}$ is to propose the `sample mean' estimator $\upalpha_1(x) = \frac{1}{n}\sum_{i = 1}^n x_i$, whereas another action $a_2 \in \mathcal{A}$ is to naively propose $\upalpha_2 (x) = 1$ (every flip is heads). It can be shown\footnote{ Given $p(x_{1:n}\given \theta) = \prod_{i = 1}^n\theta^{x_i}(1-\theta)^{1-x_i}$, the log-likelihood of the $n$ observations is $\ell(x, \theta) = \log(\theta) \sum_{i = 1}^n x_i + \log(1 - \theta) \sum_{i = 1}^n (1 - x_i)$. Maximizing with respect to $\theta$ yields $\hat{\theta}_{\text{MLE}} = \frac{1}{n}\sum_{i = 1}^n x_i = \upalpha_1(x)$.} that $a_1$ proposes an estimator which maximizes the likelihood of the observed data under the DGP \cite{rossi2018}, whereas $a_2$'s estimator is biased, thus trivially $a_1 \succ a_2$. Unless necessarily distinct, we henceforth use estimators $\upalpha$ and the actions $a$ proposing them interchangeably. 
 
-\textit{Frequentism and Minimax}: Under the frequentist paradigm, the data $x \in \mathcal{X}$ are considered random because they arise from repeated sampling via the DGP $p(x \given \theta)$. Meanwhile, $\theta$ is treated as a fixed but unknown constant in the parameter space $\Theta$. In the coin-flipping example, a frequentist would assume that the coin has a fixed (unknown) probability $\theta$ of landing heads, and thus $p(x\given \theta)$ governs each flip outcome. Thus, to evaluate a proposed estimator $\upalpha$, the frequentist approach focuses on expected loss, akin to how Peterson \cite{peterson2017} considers the expected utility. Specifically, we define the expected loss (EL) as the product of the probability of observing $x \in \mathcal{X}$ and the loss associated with estimating $\theta$ with $\upalpha(x)$,
+To quantify the preference orderings beyond the simple heuristics mentioned in the coin-flipping case, statisticians leverage loss functions \cite{wald1950}, which we denote $\mathcal{L}(\theta, \upalpha)$. The loss function represents the error associated with proposing a ``bad" estimation of the $\theta$ of interest. Thus, the best evaluation of this function is a zero loss; therefore, $\mathcal{L}(\theta, \upalpha) \geq 0$ \cite{robert2007bayesian}. From a decision-theoretic perspective, the objective of the decision-maker is to propose an estimator $\upalpha$ which minimizes this loss. Since the actual value of parameter $\theta$ is often unknown, statisticians base their ordering of estimators on the \textit{expected} loss. However, precisely how we define \textit{expected} relies upon whether one takes a frequentist or Bayesian approach. 
+
+Under the frequentist paradigm, the data $x \in \mathcal{X}$ are considered random because they arise from repeated sampling via the DGP $p(x \given \theta)$. Meanwhile, $\theta$ is treated as a fixed but unknown constant in the parameter space $\Theta$. In the coin-flipping example, a frequentist would assume that the coin has a fixed but unknown probability $\theta$ of landing heads, and thus $p(x\given \theta)$ governs each flip outcome. Hence, to evaluate a proposed estimator $\upalpha$, the frequentist approach focuses on expected loss, similar to how Peterson \cite{peterson2017} considers the expected utility. Specifically, we define the expected loss (EL) as the product of the probability of observing $x \in \mathcal{X}$ and the loss associated with estimating $\theta$ with $\upalpha(x)$,\vspace{-0.5cm}
 \begin{equation}
-	\text{EL}(\theta, \upalpha) = \mathbb{E}_{\theta}[\mathcal{L}(\theta, \upalpha)] = \sum_{x \in \mathcal{X}} \mathcal{L}\big( \theta, \upalpha(x) \big) p(x \given \theta)  \label{eq:EL}
+	\text{EL}(\theta, \upalpha) = \mathbb{E}_{\theta}[\mathcal{L}(\theta, \upalpha)] = \sum_{x \in \mathcal{X}} \mathcal{L}\big( \theta, \upalpha(x) \big) p(x \given \theta)  \label{eq:EL} \vspace{-0.35cm}
 \end{equation}
-Other works refer to the above as a risk function \cite{nikulin2001}. From this definition of expected loss, we introduce the concept of ``minimax" through a game-theoretic analogy of a game against Nature. In this framework, our goal is to select an estimator $\upalpha \in \mathcal{A}$ that \textit{minimizes} our expected loss. Meanwhile, Nature acts as an adversary, selecting a parameter $\theta \in \Theta$ (i.e., a ``state of the world") in an attempt to \textit{maximize} our expected loss \cite{ulansky2021}. The expected loss in such a game is known as the ``minimax risk", which we define as
+We also refer to the above as a risk function \cite{nikulin2001}. From this definition of expected loss, we introduce the concept of ``minimax" through a game-theoretic analogy of a game against Nature. In this framework, we aim to select an estimator $\upalpha \in \mathcal{A}$ that \textit{minimizes} our expected loss. Meanwhile, Nature acts as our adversary, selecting a parameter $\theta \in \Theta$ (i.e., a ``state of the world") in an attempt to \textit{maximize} our expected loss \cite{ulansky2021}. The risk in such a game is known as the ``minimax risk", which we define as \vspace{-0.35cm}
 \begin{equation}
-	\overline{{R}} = \min_{\upalpha \in \mathcal{A}}\bigg\{ \max_{\theta \in \Theta} \bigg\{ \text{EL}(\theta, \upalpha) \bigg\} \bigg\} \label{eq:minimaxrisk}
+	r^{\star} = \min_{\upalpha \in \mathcal{A}}\bigg\{ \max_{\theta \in \Theta} \bigg\{ \text{EL}(\theta, \upalpha) \bigg\} \bigg\} \label{eq:minimaxrisk} \vspace{-0.25cm}
 \end{equation}
-The minimax estimator is known as the estimator/decision rule $\upalpha \in \mathcal{A}$ that achieves the minimax risk. While the minimax risk $\overline{R}$ is occasionally criticized as being overly conservative \cite{peterson2017}, the ability of an estimator to be the best in the worst case scenario (which we refer to as the ``minimax guarantee") is desirable for many real-world applications including management of financial portfolios \cite{DENG2005278}.
+ While the minimax risk $r^{\star}$ is occasionally criticized as being overly conservative \cite{peterson2017}, the ability of an estimator to be the best in the worst case scenario (which we refer to as the ``minimax guarantee") is desirable for many real-world applications including management of financial portfolios \cite{DENG2005278}.\\
 
-Having defined the minimax risk in \hyperref[eq:minimaxrisk]{Equation (2)} and the corresponding guarantee, we now turn to \textit{The Bayesian Choice} \cite{robert2007bayesian}, in which Christian Robert demonstrates that under the ``least favourable" prior, Bayesian decision theory achieves a Bayes risk that is at least as good (and often better than) the frequentist minimax bound. We first introduce the notion of a \textit{prior} to explain the Bayesian paradigm. In a discrete parameter space, the prior is a function $\uppi: \Theta \mapsto [0,1] \subseteq \mathbb{R}$ satisfying $\sum_{\theta \in \Theta} \uppi (\theta) = 1$ where $\uppi(\theta)$ is the probability that $\theta$ is the ``true" state of the world. In other words, a Bayesian would say that ``$\theta$ follows a $\uppi$-distribution \textit{a priori}." In this framework the data $x \in \mathcal{X}$ still arise from the DGP $p(x \given \theta)$ (now known as the ``likelihood") but are treated as \textit{fixed} once observed. Bayesian methods instead place uncertainty in $\theta$, initially via $\uppi(\theta)$ and later in $\uppi(\theta \given x)$, the \textit{a posteriori} distribution of $\theta$, after observing $x$. In contrast, frequentist methods conceptualize $x \in \mathcal{X}$ as potentially variable under repeated sampling, while $\theta$ is fixed but unknown.
+Having defined the minimax risk in \hyperref[eq:minimaxrisk]{Equation (2)} and the corresponding `worst-case' guarantee, we now turn to \textit{The Bayesian Choice} \cite{robert2007bayesian}, where Christian Robert shows that Bayesian decision theory yields a risk that is \textit{no greater} than the minimax risk—and often strictly better. We first introduce the notion of a \textit{prior} to explain the Bayesian paradigm. In a discrete parameter space, the prior is a function $\uppi$ which maps every $\theta \in \Theta$ to a probability. By definition, the prior satisfies $\sum_{\theta \in \Theta} \uppi (\theta) = 1$ where $\uppi(\theta)$ is the probability that $\theta$ is the ``true" state of the world. In other words, a Bayesian would say that ``$\theta$ follows a $\uppi$-distribution \textit{a priori}." In this framework, the data $x \in \mathcal{X}$ still arise from the DGP $p(x \given \theta)$ (now known as the ``likelihood") but are treated as \textit{fixed} once observed. Bayesian methods instead place uncertainty in $\theta$, initially via $\uppi(\theta)$ and later in $\uppi(\theta \given x)$, the \textit{a posteriori} distribution of $\theta$ after observing $x$. In contrast, frequentist methods conceptualize $x \in \mathcal{X}$ as potentially variable under repeated sampling, while $\theta$ is fixed but unknown.
 
 
-In Decision Theory, to evaluate a proposed estimator $\upalpha \in \mathcal{A}$, the Bayesian approach focuses on the posterior expected loss (PEL). This PEL averages the loss $\mathcal{L}(\theta, \upalpha(x))$ across all possible values of $\theta \in \Theta$ and is weighted by the posterior probability of the parameter $\uppi(\theta \given x)$ conditioned on the observed value $x$. 
+To evaluate a proposed estimator $\upalpha \in \mathcal{A}$, the Bayesian approach focuses on the posterior expected loss (PEL). The PEL averages the loss $\mathcal{L}(\theta, \upalpha(x))$ across all possible values of $\theta \in \Theta$ and is weighted by the posterior probability of the parameter $\uppi(\theta \given x)$ conditioned on the observed value $x$. \\ The PEL is given by: \vspace{-0.5cm}
 \begin{equation}
-		\text{PEL}(\uppi, \upalpha \given x) = \mathbb{E}_{\uppi}[\mathcal{L}(\theta, \upalpha)\given x] = \sum_{\theta \in \Theta} \mathcal{L}(\theta, \upalpha(x)) \uppi(\theta \given x)
-\end{equation}
-The equation above considers the weighted loss across all $\theta \in \Theta$ for a singular $x$, whereas \hyperref[eq:EL]{Equation (1)} weighs across all $x \in \mathcal{X}$ for a singular $\theta$; thus, the two measures are not necessarily commensurable. To enable direct comparison between the Bayesian framework and the frequentist paradigm, Robert introduces the notion of Integrated Risk and Bayes Risk\footnote{Note that formal definitions of Bayes Risk date as far back as the 1980s with works from James O. Berger\cite{berger1985}. Robert himself cites these works as part of his argument.}. The Integrated Risk is the frequentist risk averaged over the values of $\theta$ according to their prior distribution $\uppi(\theta)$. Integrated risk is useful for comparing estimators due to the fact that it associates a real number with every estimator, while the posterior expected loss varies with $x$. Formally, we write the integrated risk as:
+	\text{PEL}(\uppi, \upalpha \given x) = \mathbb{E}_{\uppi}[\mathcal{L}(\theta, \upalpha)\given x] = \sum_{\theta \in \Theta} \mathcal{L}(\theta, \upalpha(x)) \uppi(\theta \given x) \label{eq:PEL} \vspace{-0.25cm}
+\end{equation} 
+The equation above considers the weighted loss across all $\theta \in \Theta$ for a singular $x$, whereas \hyperref[eq:EL]{Equation 1} weighs across all $x \in \mathcal{X}$ for a singular $\theta$; thus, the two measures are not commensurable. To bridge the gap between the Bayesian and frequentist paradigms, Robert introduces the notion of Integrated Risk and Bayes Risk\footnote{Note that formal definitions of Bayes Risk date as far back as the 1980s with works from James O. Berger\cite{berger1985}. Robert himself cites these works as part of his argument.}. The Integrated Risk is the frequentist risk averaged over the values of $\theta$ according to their prior distribution $\uppi(\theta)$. Integrated risk is useful for comparison because it associates a real number with every estimator, while the posterior expected loss varies with each observation $x$. Formally, we write the integrated risk as: \vspace{-0.25cm}
 \begin{equation}
- {r}(\uppi, \upalpha) = \sum_{\theta \in \Theta} \text{EL}(\theta, \upalpha)  \uppi(\theta) = \sum_{\theta \in \Theta}\sum_{x \in \mathcal{X}} \mathcal{L}\big(\theta, \upalpha(x) \big)p(x \mid \theta) \uppi(\theta)  \label{eq:IR}
+	{r}(\uppi, \upalpha) = \sum_{\theta \in \Theta} \text{EL}(\theta, \upalpha)  \uppi(\theta) = \sum_{\theta \in \Theta}\sum_{x \in \mathcal{X}} \mathcal{L}\big(\theta, \upalpha(x) \big)p(x \mid \theta) \uppi(\theta)  \label{eq:IR}
+	\vspace{-0.25cm}
 \end{equation}
-It may not seem immediately obvious how weighing the frequentist loss according to the prior $\uppi(\theta)$ fully captures the Bayesian approach. However, in his essay Robert proves that selecting an estimator $\upalpha \in \mathcal{A}$ which minimizes the purely-Bayesian posterior expected loss (see \hyperref[eq:PEL]{Equation 3}) \textit{also} minimizes the integrated risk \cite{robert2007bayesian}. Specifically, he demonstrates that summing across (or integrating) the posterior expected loss with respect to the marginal distribution of $x$ is equivalent to computing the integrated risk defined above. From this fact, he argues that the `purely' Bayesian approach, although conditional on observed data, is mathematically justified even by frequentist standards. This is due in part to the fact that it also incorporates the probabilistic properties of the data-generating process $p(x \given \theta)$, as the previous definition shows. From this, Robert argues that the Bayesian approach—though conditional on observed data—is justified even by frequentist standards, since it yields estimators that minimize overall (integrated) risk. To support his view that the Bayesian approach is \textit{superior} to the frequentist paradigm, Robert discusses the \textit{best} estimator (and its associated risk) for \hyperref[eq:IR]{Equation 4}, which he demonstrates outperforms the \hyperref[eq:minimaxrisk]{frequentist minimax risk} defined earlier. Such an estimator is known as the \textit{Bayes estimator}. For a given prior distribution $\uppi$ and a loss function $\mathcal{L}$, the Bayes estimator $\upalpha^{\uppi}(x)$ minimizes the posterior expected loss for every observation $x \in \mathcal{X}$. Consequently, it minimizes the overall integrated risk. From a constructive standpoint, the Bayes estimator can be defined by minimizing \hyperref[eq:PEL]{Equation 3} for each observation, i.e.
+The above formulation allows for comparison with the frequentist paradigm. To the skeptical reader, it may not seem immediately obvious how weighing the frequentist loss according to the prior $\uppi(\theta)$ fully captures the Bayesian approach. However, Robert proves that selecting an estimator $\upalpha \in \mathcal{A}$ which minimizes the purely-Bayesian posterior expected loss (see \hyperref[eq:PEL]{Equation 3}) \textit{also} minimizes the integrated risk \cite{robert2007bayesian}. Thus, despite conditioning on observed data, he concludes that the Bayesian approach is still justified by frequentist standards since it yields estimators that minimize the overall integrated risk. To argue in favour of a Bayesian approach over a frequentist one, Robert analyzes the best estimator (and its risk) under \hyperref[eq:IR]{Equation 4}, showing it yields risk less than or equal to the minimax standard. This `best estimator' is a \textit{Bayes estimator}. For a given prior distribution $\uppi$ and a loss function $\mathcal{L}$, the Bayes estimator $\upalpha^{\uppi}(x)$ minimizes the posterior expected loss for every observation $x \in \mathcal{X}$. Consequently, it minimizes the overall integrated risk. From a constructive standpoint, the Bayes estimator can be defined by minimizing \hyperref[eq:PEL]{Equation 3} for each observation, i.e.\vspace{-0.75cm}$$
+\forall x \in \mathcal{X}, \,\upalpha^{\uppi}(x) = \underset{\upalpha \in \mathcal{A}}{\text{argmin}} \, \bigg[\sum_{\theta \in \Theta} \mathcal{L}(\theta, \upalpha(x)) \uppi(\theta \given x)\bigg] \vspace{-0.5cm}
+$$Because $\upalpha^{\uppi}$ minimizes the point-wise PEL for each $x$, it follows that $r(\uppi, \upalpha^{\uppi})$ is also the minimal integrated risk for all $\upalpha \in \mathcal{A}$. This minimum value is known as the \textit{Bayes risk}. 
+
+We now turn to the relationship between Bayes risk and the frequentist minimax risk, a central element of Robert's argument. Specifically, we will formalize the mathematical justification for preferring the Bayesian paradigm; namely, that for every prior $\uppi \in \boldsymbol{\Pi}$, where $\boldsymbol{\Pi}$ is the set of priors on $\theta$, the Bayes Risk is \textit{at most} equal to the frequentist minimax risk. We prove this in the finite case.
+\vspace{-0.5cm}
+\begin{framed}\vspace{-0.3cm}
+\begin{proof}[\textbf{Box 1}]
+Fix $\uppi \in \boldsymbol{\Pi}$ and $\upalpha \in \mathcal{A}$. Let $\mathcal{X}$, $\Theta$, and \hyperref[eq:EL]{$\text{EL}(\theta, \upalpha)$} be {as stated}. Assume for contradiction that the Bayes risk is larger than minimax, i.e.
+\vspace{-0.25cm}
 $$
-\forall x \in \mathcal{X}, \,\upalpha^{\uppi}(x) = \underset{\upalpha \in \mathcal{A}}{\text{argmin}} \, \bigg[\sum_{\theta \in \Theta} \mathcal{L}(\theta, \upalpha(x)) \uppi(\theta \given x)\bigg]
+\min_{\alpha \in \mathcal{A}}\bigg\{\sum_{\theta \in \Theta} \text{EL}(\theta, \upalpha) \uppi(\theta)\bigg\} > \min_{\alpha \in \mathcal{A}} \Big\{\max_{\theta \in \Theta}\Big\{ \text{EL}(\theta, \upalpha)\Big\}\Big\} 
+\vspace{-0.25cm}
 $$
-Because $\upalpha^{\uppi}$ minimizes the point-wise PEL for each $x$, it follows that $r(\uppi, \upalpha^{\uppi})$ is also the minimal integrated risk for all $\upalpha \in \mathcal{A}$. This minimum value is known as the \textit{Bayes Risk}. 
+\vspace{-0.25cm}
+Noticing that $\upalpha \in \mathcal{A}$ is fixed and  $\sum_{\theta \in \Theta}\uppi(\theta) = 1$ by definition, we write that
+\vspace{-0.25cm}
+$$
+\sum_{\theta \in \Theta} \text{EL}(\theta, \upalpha) \uppi(\theta) > \max_{\theta \in \Theta}\big\{ \text{EL}(\theta, \upalpha)\big\} \cdot \sum_{\theta \in \Theta}\uppi(\theta)
+\vspace{-0.25cm}
+$$
+Consider $\Theta^{\prime} = \{\theta \in \Theta \mid \uppi(\theta) > 0\} \subseteq \Theta$. As the maximum expected loss right-hand side is constant, by summation laws we rewrite the above with respect to $\Theta^{\prime}$ as
+\vspace{-0.5cm}
+$$
+\sum_{\theta \in \Theta^{\prime}} \uppi(\theta)\Big( \text{EL}(\theta, \upalpha) - \max_{\theta \in \Theta}\big\{ \text{EL}(\theta, \upalpha)\big\}\Big)>0 
+\vspace{-0.25cm}
+$$
+However, since $\uppi(\theta)>0$ and $\Theta^{\prime} \subseteq \Theta$ this implies the existence of a $\theta \in \Theta$ for which the expected loss is greater than the maximal expected loss, which is a contradiction. Because this argument holds for any fixed $\upalpha$, taking the minimum over $\mathcal{A}$ preserves the inequality. Thus, the Bayes Risk is at most the maximin risk for any fixed $\upalpha \in \mathcal{A}$ and $\uppi \in \boldsymbol{\Pi}$ as required. \label{proof:box1}
+\end{proof}\end{framed}  \newpage The minimaxity of Bayes risk follows directly from the above. Since the result holds for any fixed $\uppi$, it also holds for the \emph{least favourable} prior that maximizes the Bayes risk. In other words, the `worst‐case' Bayes risk is no greater than the minimax risk. Thus, the Bayesian procedure attains the `minimax guarantee' in the worst case, just as the frequentist approach does. We now illustrate this minimax guarantee with a return to the coin-flipping example. We introduce two candidate priors that achieve the same `worst-case' Bayes risk, matching the frequentist minimax risk.
+\begin{framed}\hspace{-0.6cm}\textbf{\textit{Box 2.}}
+ In addition to the \hyperref[ex:1]{previous setup} where $p(x \given \theta) = \theta^x(1-\theta)^{1-x}$ and $\upalpha_1 = \frac{1}{n}\sum x_i$, we have $\upalpha_2 = 0.25 + 0.5 x$ as a candidate in $\mathcal{A}$. We further consider observations $\mathcal{X} = \{1,0\}$, parameters $\Theta = \{\frac{1}{2}, 0\}$ and loss function $\mathcal{L}(\theta, \upalpha) = |\theta - \upalpha(x)|$. We employ priors $\uppi_1 \sim \text{Discrete}\{(\theta_1, \theta_2), (\frac{1}{5}, \frac{4}{5})\}$ and $\uppi_2 \sim \text{Uniform}\{\theta_1, \theta_2\}$. Using Equations 1-4, one can compute the following loss tables under frequentist expected loss and Bayes risk: \vspace{-0.25cm}
+\[
+{\begin{array}{c|cc||c}
+		 & \upalpha_1 & \upalpha_2  & 	\text{max}_{\Theta} \\ \hline
+		\theta_1 & 0 & 0.25   & 0.25 \\
+		\theta_2 & 0.25 & 0.5 & 0.5
+\end{array}}
+\hspace{1cm}
+{\begin{array}{c|cc||c}
+		& \uppi_1 & \uppi_2  & \text{min}_{\mathcal{A}} \\ \hline
+		\upalpha_1 & 0.40 & 0.25 & 0.25 \\
+		\upalpha_2 & 0.25 & 0.25 & 0.25   
+\end{array}} \vspace{-0.25cm}
+\]
+From the above, $r^{\star} = \min_{\mathcal{A}}\{0.25, 0.50\} =0.25$ and $r(\upalpha^{\uppi}) =  {\max_{\boldsymbol{\Pi}}\{0.25, 0.25\} =0.25}$. 
+\end{framed}
+In the above example, both priors $\uppi_1$ and $\uppi_2$ are least favourable, as the Bayesian maximin risk is equivalent to the minimax risk. However, even small adjustments of the variables in Box 2 (i.e., slightly modifying $\upalpha_2$) restore strict preference of $r(\upalpha^{\uppi})$ over $r^{\star}$.
 
+We have thus explained and mathematically justified the central pieces of Christian Robert’s argument. By incorporating prior information via the integrated risk, one can often demonstrate that the Bayes risk is no greater than the frequentist $r^{\star}$ and thus shares the same `minimax guarantee.' In other words, by leveraging prior information, the Bayesian approach performs at least as well (and often better than) the standard minimax procedure. However, this raises a concern about the subjectivity of $\uppi(\theta)$, which we will explore in Philip Stark's counterargument.
 
+While Stark does not dispute the proof-theoretic result that Bayes risk cannot exceed minimax risk, he argues in \textit{Constraints versus Priors} that introducing a prior distribution $\uppi$ adds extra information to the decision problem, which \textit{artificially} lowers the Bayes risk relative to the minimax risk. Moreover, he criticizes the subjective nature of priors, arguing that the Bayesian approach places biased assumptions on the state of Nature \cite{stark2020constraints}. 
 
-% "not necessarily as dangerous as frequentists may depict it"
-\textit{Remaining Work}
-\begin{enumerate}\item{Introduce Robert's Argument and proof. (Bayesianism (done), Posterior Expected Loss (done), Integrated Risk (done), Bayes Risk, proof of Bayes Risk $\leq$ Minimax Risk using weighted sum vs. set maxima)} 
-\item{Introduce Stark's Counterargument: How the prior $\pi(\theta)$ is subjective, and Robert's proof is trivial since you are ``adding information" to the risk problem which was previously constrained by objectivity.}
-\item{Introduce the Bayesian Rebuttal: Namely, the subjectivity of choice of loss function $\mathcal{L}(\dots)$ implies the frequentist construction of the problem isn't operating under such ``objective constraints," so given that subjective claims need to be made on the state of Nature, a Bayesian approach gives provable optimality. }
-\item{Conclusion and Introduction }
- \end{enumerate}
- %Formally, by examining how integrated Bayesian risk can match the worst-case criterion, Robert’s analysis shows that Bayesian decision theory is “at least as good” as the frequentist minimax approach, yet retains the interpretive benefits of a prior-based framework.
-%% transition into Christian Robert’s book The Bayesian Choice, in which he uses minimaxity of integrated bayesian risk as an argument in favour of a Bayesian decision-theoretic approach over a frequentist one. 
-%  Christian Robert’s book The Bayesian Choice
-% Robert' section:
-% Intro to bayesian philosophy (what is random what isn't)
-% Connection to coin example again
-% Introduce integrated risk (maybe posterior expected loss)
-%% Frequentist risk averaged over the values of theta according to their posterior distribution
-% Introduce Bayes Estimator (Definition 2.3.3)
-%% and Bayes risk as r(\pi) = r(\pi, \alpha_{\text{B}})
-%% r(\pi, \alpha) = \sum_{\theta \in \Theta}\sum_{x \in \mathcal{X}} \mathcal{L}\big(\theta, \alpha(x) \big)p_{\mathcal{X}\mid\Theta}(x \mid \theta) p_{\Theta}(\theta)
-%% or using pi notation
-%% \alpha_{\text{B}} = \underset{ {\alpha \in \mathcal{A}} }{\text{argmin}}\sum_{\theta \in \Theta}\sum_{x \in \mathcal{X}} \mathcal{L}\big(\theta, \alpha(x) \big)p_{\mathcal{X}\mid\Theta}(x \mid \theta) \pi(\theta) \\
-% Demonstrate using least favourable prior that
-% the Bayes risk is always smaller than the minmax risk
-%% \max_{\pi \in \Pi}r(\pi, \alpha_{\text{B}}) \leq R(\theta, \overline{\alpha}_{\text{F}})
-% using weighted sum <= maximum
-% making a decision based on the expected value of the loss function; 
-%  represents the loss (or error) owing to a bad evaluation of the function of θ of interest, and therefore that even the best evaluation of this function, i.e.,
-% when θ is known, can induce at best a null loss.
+To illustrate Stark’s critique of incorporating extraneous information, we extend the coin-flipping example from \hyperref[ex:1]{Box 2} by introducing an additional observation space $\mathcal{Y}$. Specifically, we define $y \in \mathcal{Y}$ as the outcome of a die rolled in a separate room. This event is unrelated to the coin flip, the parameter $\theta$, or the loss incurred by choosing estimator $\upalpha$. Nevertheless, the uniform distribution $p(y)=1/6$ exists over $\mathcal{Y}$, satisfying $\sum_{y \in \mathcal{Y}}p(y) = 1$ and $p(y) \geq 0$ for $y \in\{1,2, \dots, 6\}$. Consequently, we can adjust \hyperref[eq:EL]{Equation 1} by marginalizing over this irrelevant observation space. The resulting {\textit{modified}} expected loss (MEL) is defined as: \vspace{-0.5cm}
+$$
+\text{MEL}(\theta, \upalpha) = \sum_{y \in \mathcal{Y}}\sum_{x \in \mathcal{X}} \mathcal{L}(\theta, \upalpha(x))p(x \mid \theta)p(y) \label{eq:MEL} \vspace{-0.25cm}
+$$
+Notice that this construction mimics the definition of integrated risk in \hyperref[eq:IR]{Equation 4}, except rather than adding prior information $\uppi(\theta)$ we incorporate irrelevant $p(y)$. Indeed, one can show directly that $\text{min}_{\upalpha \in \mathcal{A}} \text{MEL}(\theta, \upalpha)$ is at most the minimax risk $r^{\star}$, mirroring the relationship of Bayes risk to $r^{\star}$. So the question arises: what makes the set of priors $\boldsymbol{\Pi}$ any different from purely extraneous information $\mathcal{Y}$?
+
+Stark argues that there is hardly any difference at all. He claims that by selecting a prior $\uppi \in \boldsymbol{\Pi}$, the statistician is assuming the state of Nature, which opens their methodology to subjectivity and human error \cite{stark2020constraints}. Specifically, he argues that the Bayesian analyst ``claim[s] to know more about how Nature generates the data" than the frequentist \citep[p.8]{stark2020constraints}. Recall our earlier game-theoretic description of the estimation loss as one in which our opponent, Nature, selects a parameter $\theta \in \Theta$ in an attempt to maximize the loss $\mathcal{L}$ of choosing estimator $\upalpha \in \mathcal{A}$ \cite{ulansky2021}. In the frequentist paradigm, the statistician does not know the rule by which Nature selects $\theta$ to generate the data $\mathcal{X}$. To Stark, the Bayesian framework is far more relaxed; a Bayesian assumes Nature has a distribution $\uppi$ it selects $\theta$ from, which is shared \textit{a priori} to both players. Hence, he insists that the Bayes risk approach, contrary to Robert's claim of superiority, is, in fact, a strategy for an entirely different game and \textit{cannot} be directly compared to the frequentist procedure. As he puts it, the reduced Bayes risk relative to minimax ``is because the prior added information not present" in the frequentist constraints \citep[p.10]{stark2020constraints}. In other words, any sizable gap between Bayes and minimax risk should prompt us to question whether we genuinely share the analyst's beliefs about how Nature selects $\theta$ via $\uppi(\theta)$ or if it is potentially meaningless `extra' information —akin to $p(y)$ in \hyperref[eq:MEL]{MEL}—that yields the difference. To summarize, Stark maintains that the inherent subjectivity in selecting prior alongside the risk of introducing irrelevant information undermines the Bayesian framework, rendering it no better than the frequentist approach.  
+
+To combat Stark's objections, Robert would argue that when done prudently, the choice of a prior is not an arbitrary injection of extra information but a necessary aspect of statistical modeling. He would remind Stark that even in cases where the analyst lacks knowledge of the problem domain, they can employ an uninformative or ``diffuse" prior distribution to objectively capture features of the parameter $\theta$ without imposing their subjective beliefs \cite{zellner1971}. By construction, the influence of a diffuse prior on the posterior is minimal \cite{lee2025}. Hence, the likelihood $p(x \given \theta)$ dominates the posterior, and the resulting Bayes estimator (and thus Bayes risk) depends on the observations $x \in \mathcal{X}$ rather than the analyst's subjective inputs. Importantly, such a diffuse prior is, at worst, least favourable; thus, the inequality proved in \hyperref[proof:box1]{Box 1} holds without the injection of personal bias. Consequently, the choice of prior exerts a far more negligible impact on the integrated risk than Stark's critique would imply. 
+
+Moreover, even if an analyst chooses a prior based on personal beliefs, subjectivity is an inherent aspect of decision-theoretic analysis. For example, as illustrated in \hyperref[ex:1]{Box 2}, the loss function is arbitrary; one might just as easily opt for Huber loss \cite{huber1964}, squared error loss \cite{hastie2001elements}, or many other alternatives instead of the mean absolute error. In choosing $\mathcal{L}(\theta, \upalpha) = |\theta - \upalpha(x)|$ to evaluate the coin-flipping estimators, the analyst made an inherently subjective decision. Thus, to assess estimators, frequentist and Bayesian analysts make subjective decisions. Therefore, just as Stark challenges us to question \textit{why} an analyst believes $\uppi$ accurately describes how Nature selects $\theta$, one might equally question whether $\mathcal{L}$ truly captures the loss relationship between $\theta$ and $\upalpha$ or even reflects a sensible model of Nature. In this sense, Robert would argue that Stark’s argument is flawed, as he denounces the metaphysical assumptions of the Bayesian paradigm, which are equally present in the frequentist framework. Ultimately, he would argue, the Bayesian approach embraces the unavoidable subjectivity inherent in decision theory by selecting a prior that quantifies uncertainty about the natural world and, in doing so, often reduces the integrated risk.  
+
+In conclusion, we stand by the mathematically justified perspective of Christian Robert and other Bayesians, advocating for the Bayesian framework which not only meets the minimax guarantee but often exceeds it. Criticisms regarding the subjectivity of priors fall short when faced with the reality that all statistical methods rely on underlying assumptions that may introduce bias. Rather than undermining the Bayesian approach, these critiques reaffirm the importance of incorporating uncertainty in the state of Nature through prior distributions, reinforcing our thesis in favor of Bayesian methodology.
+
 \bibliographystyle{unsrt}
 \bibliography{final_paper_bib}  
-% Introduce Minimax Risk
-%% Introduce minimax estimator
-%% \overline{\alpha}_{\text{F}} = \text{argmin}_{\alpha \in \mathcal{A}} \max_{\theta \in \Theta}\sum_{x \in \mathcal{X}}\mathcal{L}(\theta , \alpha(x))f(x\mid \theta)
-%% "minimax guarantee" in the worst-case scenario
-
-
+\newpage
+\subsection*{Appendix}
+Below is the code used to compute the loss tables in Box 2 and the comments following it. The interested reader may edit lines 3, 6, 10,  19, 26, 27, or 32 to see that the Bayes risk is always lower than the minimax risk except for the example given in Box 2. 
+\begin{lstlisting}
+# priors
+pi_1 <- function(theta){
+	if(theta == 0.5){
+		return(0.2)
+	} else {
+		return(0.8)
+	}
+}
+pi_2 <- function(theta){
+	return(1/2)
+}
+Pi <- list(pi_1, pi_2)
+# alphas
+a_1 <- function(x){
+	return(mean(X))
+}
+a_2 <- function(x){
+	# a(0)=0.25, a(1)=0.75.
+	epsilon <- 0.00 # small change in epsilon -> bayes preferred
+	# 0.25 -> 0.25+(5*epsilon / 10) for freq
+	# 0.25 -> 0.25+(epsilon/10) for bayes
+	return(0.25 + (0.50 + epsilon)*x) # key piece for equality
+}
+A <- list(a_1, a_2)
+# x, theta, PDF and loss
+X <- c(0,1)
+Theta <- c(1/2, 0)
+pX <- function(x, theta){
+	return(dbinom(x, 1, theta))
+}
+L <- function(theta, a){
+	return(abs(theta - a))
+}
+# ---------- FREQUENTIST RISK TABLE ------------
+frequentist_risk <- matrix(NA, nrow=length(Theta), ncol=length(A))
+rownames(frequentist_risk) <- paste("theta =", Theta)
+colnames(frequentist_risk) <- c("a1", "a2")
+for (i in seq_along(Theta)) {
+	for (j in seq_along(A)) {
+		theta <- Theta[i]
+		risk <- 0
+		for (x in X) {
+			# expected loss (eq 1)
+			risk <- risk + L(theta, A[[j]](x)) * pX(x, theta)
+		}
+		frequentist_risk[i, j] <- risk
+	}
+}
+print("Frequentist Risk Table:")
+print(frequentist_risk)
+# ---------- BAYES RISK TABLE ------------
+bayes_risk <- matrix(NA, nrow=length(Pi), ncol=length(A))
+rownames(bayes_risk) <- c("pi_1", "pi_2 (uniform)")
+colnames(bayes_risk) <- c("a1", "a2")
+for (k in seq_along(Pi)) {
+	prior <- Pi[[k]]
+	for (j in seq_along(A)) {
+		risk_bayes <- 0
+		for (i in seq_along(Theta)) {
+			# integrated risk, eq 4
+			risk_bayes <- risk_bayes + frequentist_risk[i, j] * prior(Theta[i])
+		}
+		bayes_risk[k, j] <- risk_bayes
+	}
+}
+print("Bayes Risk Table:")
+print(bayes_risk)
+# ---------- COMPUTE ------------
+# minimax, eq 2
+frequentist_minimax <- min(apply(frequentist_risk, 2, max))
+print(paste("Frequentist Minimax Risk =", frequentist_minimax))
+bayes_maximin <- max(apply(bayes_risk, 1, min))
+print(paste("Bayesian Maximin (Bayes Risk under least favourable prior) =", bayes_maximin))
+\end{lstlisting}
 \end{document}
