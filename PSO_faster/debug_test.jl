@@ -11,19 +11,26 @@ function mnunif(m::Int, n::Int, lower, upper)
     # generate m*n matrix scaled to the boundaries
     return rand(m, n) .* (upper .- lower) .+ lower
 end
+T = 1000
+
+p_c_p = 0#0.5 + log(2)
+p_c_g = 0#0.5 + log(2)
 #  mnunif(npar, Int(p_s), lower, upper)
-p = 3
-N = 100
-mnunif(p, N, 0, 1)
-Random.seed!(1921)
-# simple plot
-X = mnunif(2, N, 0, 1)
-scatter(X[1, :], X[2, : ], title="Random Uniform Scatter", xlabel="x", ylabel="y")
-# TODO: Make this more efficient
-pairwise_distances = [norm(X[:, i] - X[:, j]) for i in 1:N, j in 1:N]
-histogram(mean.(eachcol(pairwise_distances)), 
-          xlabel="Average Pairwise Distances", 
-          ylabel="Frequency", 
-          title="Mean Pairwise Distances for Uniform Sample",
-          legend=false,
-          color=:skyblue)
+# ϕ = c_1 + c_2
+ϕ = p_c_p + p_c_g
+# χ = 2 / |2 - ϕ - √(ϕ^2 - 4ϕ)|
+χ = ϕ >= 4 ? 2 / abs(ϕ - 2 + sqrt(ϕ^2 - 4ϕ)) : 1.0
+
+
+p_c_p = collect(range(0.5, stop=2.5, length=T))
+p_c_g = collect(range(0.5, stop=2.5, length=T))
+
+ϕ = p_c_p .+ p_c_g
+# ifelse.(ϕ .>= 4, 2 ./ abs.(ϕ .- 2 .- sqrt.(ϕ.^2 .- 4 .* ϕ)), 1.0)
+t = collect(range(1, stop=T, length=T))
+T = 1000
+χ = function (t)
+    h = 0.05   # http://boulph.free.fr/Krzysztof/test%20.pdf
+    1 - (t / T)^h
+end
+plot(χ.(t), title="Linear Decay", xlabel="Step", ylabel="Value", lw=1)
