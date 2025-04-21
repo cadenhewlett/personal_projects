@@ -1,0 +1,90 @@
+\begin{thebibliography}{10}
+
+\bibitem{tu2004data}
+Jun Tu and Guofu Zhou.
+\newblock Data-generating process uncertainty: What difference does it make in
+  portfolio decisions?
+\newblock {\em Journal of Financial Economics}, 72(2):385--421, 2004.
+
+\bibitem{upton2008oxford}
+Graham Upton and Ian Cook.
+\newblock {\em Oxford Dictionary of Statistics}.
+\newblock Oxford University Press, 2008.
+
+\bibitem{rossi2018}
+Richard~J. Rossi.
+\newblock {\em Mathematical Statistics: An Introduction to Likelihood Based
+  Inference}.
+\newblock John Wiley \& Sons, New York, 2018.
+\newblock p. 227.
+
+\bibitem{wald1950}
+Abraham Wald.
+\newblock {\em Statistical Decision Functions}.
+\newblock Wiley, Oxford, England, 1950.
+\newblock Includes 76-item bibliography. PsycINFO Database Record (c) 2016.
+
+\bibitem{robert2007bayesian}
+Christian~P. Robert.
+\newblock {\em The Bayesian Choice: From Decision-Theoretic Foundations to
+  Computational Implementation}.
+\newblock Springer Texts in Statistics. Springer-Verlag New York, 2 edition,
+  2007.
+
+\bibitem{peterson2017}
+Martin Peterson.
+\newblock {\em An Introduction to Decision Theory}.
+\newblock Cambridge University Press, New York, 2nd edition, 2017.
+
+\bibitem{nikulin2001}
+M.~S. Nikulin.
+\newblock Risk of a statistical procedure.
+\newblock In {\em Encyclopedia of Mathematics}. EMS Press, 2001.
+\newblock Originally published in 1994.
+
+\bibitem{ulansky2021}
+V.~Ulansky and A.~Raza.
+\newblock Generalization of minimax and maximin criteria in a game against
+  nature for the case of a partial a priori uncertainty.
+\newblock {\em Heliyon}, 7(7):e07498, Jul 2021.
+
+\bibitem{DENG2005278}
+Xiao-Tie Deng, Zhong-Fei Li, and Shou-Yang Wang.
+\newblock A minimax portfolio selection strategy with equilibrium.
+\newblock {\em European Journal of Operational Research}, 166(1):278--292,
+  2005.
+\newblock Metaheuristics and Worst-Case Guarantee Algorithms: Relations,
+  Provable Properties and Applications.
+
+\bibitem{berger1985}
+James~O. Berger.
+\newblock {\em Statistical Decision Theory and Bayesian Analysis}.
+\newblock Springer-Verlag, New York, 2nd edition, 1985.
+
+\bibitem{stark2020constraints}
+Philip~B. Stark.
+\newblock Constraints versus priors.
+\newblock Technical report, 2020.
+\newblock Department of Statistics, University of California, Berkeley.
+
+\bibitem{zellner1971}
+Arnold Zellner.
+\newblock {\em Prior Distributions to Represent 'Knowing Little'}.
+\newblock John Wiley \& Sons, New York, 1971.
+
+\bibitem{lee2025}
+Sarah Lee.
+\newblock A comprehensive guide to noninformative priors in bayesian analysis.
+\newblock {\em Number Analytics Blog}, March 2025.
+
+\bibitem{huber1964}
+Peter~J. Huber.
+\newblock Robust estimation of a location parameter.
+\newblock {\em Annals of Mathematical Statistics}, 53(1):73--101, 1964.
+
+\bibitem{hastie2001elements}
+Trevor Hastie, Robert Tibshirani, and Jerome~H. Friedman.
+\newblock {\em The Elements of Statistical Learning}.
+\newblock Springer, 2001.
+
+\end{thebibliography}

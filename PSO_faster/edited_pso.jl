@@ -47,6 +47,13 @@ function psoptim(par::Union{Number, Nothing, AbstractVector{<:Number}, Vector{No
         end
         return out
     end
+    # scheduled decay weights of length n at time t of T=p_maxit
+    function w(N, t; γ_max=3.0, γ_min=1e-5, s=u -> u,)
+        u = t / (p_maxit - 1)
+        γ = max(γ_max * s(u), γ_min) 
+        raw = (1:N) .^ (-γ)
+        return raw ./ sum(raw)
+     end
     # ------------------- #
     # -- Default Param -- #
     # ------------------- #
@@ -234,7 +241,6 @@ function psoptim(par::Union{Number, Nothing, AbstractVector{<:Number}, Vector{No
             # update inertia coefficient if implementing decay
             w_t =  (p_w0 + (p_w1 - p_w0) * t) # TODO: precompute and index with TVAC
             # TODO: implement acceleration updating here  : alternative is to rep p_c_p maxit times and index wrt t
-        
             # ------------------------- #
             # ---- Update Velocity ---- #
             # ------------------------- #
@@ -245,7 +251,15 @@ function psoptim(par::Union{Number, Nothing, AbstractVector{<:Number}, Vector{No
              # exploration: ... +  r_1c_1 \big( p_t^{(i)} - X^{(i)} \big)
              V[:, i] = V[:, i] + rand(Uniform(0, p_c_p), npar).*(P[:, i] - X[:, i])
              # exploitation: ... +  r_2c_2 \big( g_t - X^{(i)} \big)
-             V[:, i] = V[:, i] + rand(Uniform(0, p_c_g), npar).*(P[:, j] - X[:, i])
+             # V[:, i] = V[:, i] + rand(Uniform(0, p_c_g), npar).*(P[:, j] - X[:, i])
+             # collect the informants of i
+             idxs = findall(L[:, i])
+             # rank them by their performance
+             R = idxs[sortperm(f_p[idxs]; rev=false)]
+             # weigh them dimension-wise via γ(t) 
+             K_i = P[:, R] * (w(length(R), t))
+             # try new exploitation procedure
+             V[:, i] = V[:, i] + rand(Uniform(0, p_c_g), npar).*(K_i - X[:, i])
             end
             # then, check if velocity exceeds cap
             if !isnothing(p_vmax) && abs(p_vmax) != Inf
@@ -288,7 +302,7 @@ function psoptim(par::Union{Number, Nothing, AbstractVector{<:Number}, Vector{No
                 # end
                 f_p[i] = f_x[i]
                 if f_p[i] < f_p[i_best]
-                    println("Updating i_best: Old Best = ", f_p[i_best], " New Best = ", f_p[i])
+                    #println("Updating i_best: Old Best = ", f_p[i_best], " New Best = ", f_p[i])
                     i_best = i
                 end
             end
@@ -377,4 +391,22 @@ function psoptim(par::Union{Number, Nothing, AbstractVector{<:Number}, Vector{No
 end
 
 
-
+D = 30
+S = 40
+maxFE = 200000
+new = psoptim(
+    rand(Uniform(-100, 100), D), 
+    x -> sum(x.^2), # sphere, 
+    lower = fill(-100, D), 
+    upper = fill(50, D),  
+    report = Int(maxFE/400), 
+    maxit = Int(maxFE/S), 
+    s = S)
+old = psoptim_2007(
+    rand(Uniform(-100, 100), D), 
+    x -> sum(x.^2), # sphere, 
+    lower = fill(-100, D), 
+    upper = fill(50, D),  
+    report = Int(maxFE/400), 
+    maxit = Int(maxFE/S), 
+    s = S)

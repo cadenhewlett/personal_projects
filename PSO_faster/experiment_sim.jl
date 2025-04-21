@@ -2,6 +2,7 @@ using Random
 using DataFrames
 Random.seed!(1928)
 include("psoptim.jl")
+include("edited_pso.jl")
 evaluate_file = false
 # ---------------------- #
 # --- Test Functions --- #

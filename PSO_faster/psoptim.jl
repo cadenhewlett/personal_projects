@@ -5,7 +5,7 @@ using Distributions
 using LinearAlgebra
 using Random
 
-function psoptim(par::Union{Number, Nothing, AbstractVector{<:Number}, Vector{Nothing}},
+function psoptim_2007(par::Union{Number, Nothing, AbstractVector{<:Number}, Vector{Nothing}},
                  fn::Function;
                  lower::Union{Number, AbstractVector{<:Number}} = -1, 
                  upper::Union{Number, AbstractVector{<:Number}} = 1,
@@ -288,7 +288,7 @@ function psoptim(par::Union{Number, Nothing, AbstractVector{<:Number}, Vector{No
                 # end
                 f_p[i] = f_x[i]
                 if f_p[i] < f_p[i_best]
-                    println("Updating i_best: Old Best = ", f_p[i_best], " New Best = ", f_p[i])
+                    # println("Updating i_best: Old Best = ", f_p[i_best], " New Best = ", f_p[i])
                     i_best = i
                 end
             end
