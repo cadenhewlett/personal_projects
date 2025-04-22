@@ -293,3 +293,6 @@ For each $i = 1,2, \dots n$,  introduce $m$ auxiliary parameters sampled from $\
 Resample $c_i$ by Gibbs sampling among: the $k$ existing clusters, the $m$ auxiliary clusters, probabilities (specifically the existing cluster $c$, proportional to $n_{-i, c} \times F(y_i | \theta_c)$ and auxiliary cluster $j$ proportional to $(\alpha/m) \times F(y_i \mid \theta_j)$).
 
 Then after updating all $c_i$, update the $\theta_c$ for active clusters. 
+
+### Implementation (Skeleton)
+
