@@ -1,0 +1,39 @@
+---
+title: "Gibbs Sampling with Auxiliaries"
+author: "Caden Hewlett"
+format: pdf
+---
+
+## Introduction
+
+Neal's algorithm...
+
+
+## Algorithm
+
+
+### Implementation
+
+
+## Experiment/Verification
+
+To verify our implementation of the sampler, we design a mixture of non-overlapping uniform distributions. There are a total of three clusters, each with their own center, $\theta \in \{-5, 0, 5\}$. Specifically, we let
+$$
+\begin{aligned}
+\theta_i &= -5 + 5 \Big\lfloor \, \frac{1}{30}(i - 1) \Big\rfloor, \text{ for } i \in[1,90]  \\
+Y_i &\sim \mathcal{U}(\theta_i - 0.3, \theta_i + 0.3)
+\end{aligned}
+$$
+Where the log-likelihood of a single observation $y_i$ is given by
+$$
+\log f(y_i ; \theta_i) = \begin{cases} -\log(0.6), & y_i  \in [\theta-0.3, \theta + 0.3] \\
+-\infty, & \text{otherwise}\end{cases}
+$$
+Consquently, we define the Dirichlet Process mixture model as:
+$$
+\begin{aligned}
+\mathcal{P} &\sim \text{DP}(\alpha, \mathbb{G}_0) \\
+\Theta_i \mid \mathcal{P} &\sim \mathcal{P}  \\
+Y_i \mid \Theta_i &\sim \mathcal{U}(\Theta_i - a, \Theta_i + b)
+\end{aligned}
+$$

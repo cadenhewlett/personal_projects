@@ -3,7 +3,7 @@ import numpy as np
 # Neal, R. M. (2000) JCGS, vol.9(2), pp.249–265
 # Section 6: Gibbs Sampling with Auxiliary Parameters
 # Algorithm 8 (p.261):
-# "Let the state of the Markov chain consist of c = (c1,...,cn) and θ = (θc : c ∈ {c1,...,cn})."
+# Let the state of the Markov chain consist of c = (c1,...,cn) and θ = (θc : c ∈ {c1,...,cn})."
 
 def dpmm_aux_gibbs(y, alpha, draw_G0, log_prior, log_likelihood,
                    m, num_iters, proposal_std,
@@ -58,7 +58,7 @@ def dpmm_aux_gibbs(y, alpha, draw_G0, log_prior, log_likelihood,
                 print("\nBurn-in done!")
             print(f"\rRunning sampler: {pct}%", end='', flush=True)
 
-        # === Step 1: update c[i] with auxiliary parameters (Neal, p.261) ===
+        # === Step 1: update c[i] with auxiliary parameters ===
         for i in range(n):
             mask = np.arange(n) != i
             ex_labels, ex_counts = np.unique(c[mask], return_counts=True)
@@ -77,7 +77,7 @@ def dpmm_aux_gibbs(y, alpha, draw_G0, log_prior, log_likelihood,
                 for _ in range(m):
                     theta_aux.append(draw_G0())
 
-            # Compute weights (Neal, p.261)
+            # Compute weights following Neal, p.261
             w_ex = [count_dict[lbl] * np.exp(log_likelihood(y[i], theta[lbl]))
                     for lbl in ex_labels]
             w_aux = [(alpha/m) * np.exp(log_likelihood(y[i], th))
@@ -102,13 +102,13 @@ def dpmm_aux_gibbs(y, alpha, draw_G0, log_prior, log_likelihood,
                     theta[new_lbl] = theta_aux[aux_idx]
                     c[i] = new_lbl
 
-        # === Step 2: prune empty clusters & relabel (Neal, p.261) ===
+        # === Step 2: prune empty clusters & relabel ===
         active = np.unique(c)
         label_map = {old: new for new, old in enumerate(active)}
         c = np.array([label_map[ci] for ci in c], dtype=int)
         theta = {label_map[old]: theta[old] for old in active}
 
-        # === Step 3: update theta_c via MH (Neal, p.261) ===
+        # === Step 3: update theta_c via MH  ===
         for lbl in list(theta.keys()):
             y_clust = y[c == lbl]
             old = theta[lbl]

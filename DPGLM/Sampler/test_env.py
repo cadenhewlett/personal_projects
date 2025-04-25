@@ -1,13 +1,11 @@
 import numpy as np
+import pickle
 import matplotlib.pyplot as plt
 from sampler import *
 from scipy.stats import laplace
 
 np.random.seed(1924)
-
-
 # 1. Simulate:
-np.random.seed(0)
 true_centers = [-5.0, 0.0, 5.0]
 y_data = np.hstack([
   np.random.uniform(c-0.3, c+0.3, size=30)
@@ -17,7 +15,6 @@ y_data = np.hstack([
 # 2. Base-sampler & log-prior:
 draw_G0 = lambda: np.random.uniform(-10,10)
 log_prior = lambda theta: 0 if -10 <= theta <= 10 else -999
-
 # 3. Uniform likelihood:
 def log_likelihood(y, theta):
     return ( -np.log(0.6)
@@ -45,8 +42,7 @@ for lbl in unique:
     print(f"Cluster {lbl}: size={idx.sum()}, mean(y)={y_data[idx].mean():.3f}, theta_est={theta_final[lbl]:.3f}")
 
 # cluster_counts = [ len(np.unique(c_arr)) for c_arr in traces['c'] ]
-# plt.plot(cluster_counts)
-# plt.title("Trace of # of clusters")
-# plt.xlabel("Iteration (post–burn‑in)")
-# plt.ylabel("K")
-# plt.show()
+# Save output
+output = {"traces": traces, "y_data": y_data}
+with open('aux_gibbs_output.pkl', 'wb') as f:
+    pickle.dump(output, f)
