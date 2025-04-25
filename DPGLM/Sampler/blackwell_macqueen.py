@@ -1,4 +1,6 @@
 import numpy as np
+import os
+print(os.getcwd())
 
 def blackwell_macqueen(N, alpha, g0 = lambda: np.random.normal()) :
     """
