@@ -1,0 +1,141 @@
+---
+title: "Gamma AR Processes with Variable Shape"
+author: "Caden Hewlett"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+
+## Introduction
+
+
+Following the construction of Sim (1990), we consider a model autoregressive gamma model of the following form:
+
+$$
+X_n = \alpha \ast X_{n-1} + \varepsilon_n, \hspace{0.25cm} \text{ where } \hspace{0.25cm}\alpha \ast X_{n-1} = \sum_{i=0}^{N(X)} W_i
+$$
+In the above,
+
+  - $\varepsilon_n \sim \text{Gamma}(\nu, \alpha)$ with (unintuitively) **shape** $\nu$ and **scale** $\alpha$.
+  - Each $W_i$ are *iid* exponential random variables with rate $\alpha$
+  - For a fixed value of $x$, the $N(x)$ is a Poisson distributed random variable with rate paraemeter $\lambda = p\alpha$
+  - Where $p$ indicates the magnitude of the autocorrelation in the process
+  
+## Allowing Temporal Dependence in Shape
+
+We now consider the case where the shape parameter $\nu$ is unique for each $X_n$; as such, it is temporally dependent and potentially a function of other random variables, i.e. $\nu \to \nu_n$, for $n > 0$.
+
+
+### Derivations 2.1.1, 2.1.2, 2.2
+
+We begin by noting that the Laplace transform (LT) of $\alpha \ast X$ conditioned on a fixed $X = x$ (derivations 2.1.1 and 2.1.2) remain unchanged, as both $W_i$ and $N(X)$ are independent of $\nu_t$.
+
+
+From this independence, the cumulative process $\alpha \ast X_{n-1}$ remains independent of $\varepsilon_t$. Thus the LT of $X_n$ given $X_{n-1} = x$ can be written as a slight adjustment ot the previously-derived Equation 2.2., i.e.
+
+$$
+\begin{aligned}
+\mathbb{E}[\exp(-sX_n) \mid X_{n-1} = x] &=  \Big(\dfrac{\alpha}{s + \alpha}\Big)^{\nu_t}\exp\Big( \dfrac{-\lambda x s}{\alpha + s} \Big)
+\end{aligned}
+$$
+
+As before, allowing $\Phi_{X_n}(s)$ to be the Laplace transform of the PDF of $X_n$ (i.e. $\Phi_{X_n}(s) = \mathbb{E}[\exp(-sX_n)]$), yields
+$$
+\Phi_{X_n}(s) = \Big(\dfrac{\alpha}{s + \alpha}\Big)^{\nu_n} \Phi_{X_{n-1}} \Big( \dfrac{\alpha p  s}{\alpha + s} \Big)
+$$
+
+## Derivation 2.2.2: The Trouble Point
+
+Previously, we solved the recursive relationship for $\Phi_{X_n}(s)$ to prove that $\Phi_{X_n}(s) \to (1 + \theta^{-1})^{- \nu}$ as $n \to \infty$.
+
+In order to do this, we recognized and simiplified a telescoping series that allowed us to write:
+
+$$
+\Phi_{X_n}(s)= \Big(\dfrac{\alpha}{\alpha + s\sum_{k = 0}^{n-1}p^k}\Big)^{\nu}  \Phi_{X_{0}} \Big( \dfrac{\alpha p^n s}{\alpha + s\sum_{k = 0}^{n-1}p^k} \Big)
+$$
+
+In my proof of this, I wrote up a generalized $n = 2$ case and noticed the emerging pattern. However, in my rough work I also derived the $n = 3$ instance to identify the telescoping properties. Specifically, letting $C_2$ be the coefficients of $\Phi_{X_2}(s)$ I had that
+
+$$
+\begin{aligned}
+\Phi_{X_3}(s) &= C_2 \cdot\Phi_{X_1} \Big( \dfrac{\alpha p^2 s}{\alpha + p(1-s)}\Big) \\
+&= C_2 \cdot\Bigg( \dfrac{\alpha}{\alpha + \dfrac{\alpha p^2 s}{\alpha + p(1-s)}} \cdot \Phi_{X_0}(\dots) \Bigg)^{\nu} \\
+& = C_2 \bigg( \dfrac{\alpha + p(1+s)}{\alpha + p^2 s + ps + p}\bigg)^{\nu} \\
+& = \bigg( \frac{\alpha}{\alpha + s}\bigg)^{\nu}  \bigg( \dfrac{\alpha + s}{\alpha + p(1+s)}\bigg)^{\nu}\bigg( \dfrac{\alpha + p(1+s)}{\alpha + p^2 s + ps + p}\bigg)^{\nu} \Phi_{0}(\dots) \hspace{ 2.5cm} (\star)
+\end{aligned}
+$$
+The telescoping pattern in $(\star)$ allows us to simplify the pattern for general $n$ to a geometric sum in which $\Phi_0(\dots)$ becomes negligible as $n \to \infty$. However, if we allow for different values of $\nu$ for each $n$, the series cannot simplify in this fashion. 
+
+
+Instead, it becomes some strange non-simplifying product sequence.
+$$
+\begin{aligned}
+\Phi_{X_3} &= \bigg( \frac{\alpha}{\alpha + s}\bigg)^{\nu_1}  \bigg( \dfrac{\alpha + s}{\alpha + p(1+s)}\bigg)^{\nu_2}\bigg( \dfrac{\alpha + p(1+s)}{\alpha + p^2 s + ps + p}\bigg)^{\nu_3} \Phi_{0}(\dots)  \\
+&= \alpha^{\nu_1}(\alpha + s)^{\nu_2 - \nu_1}\big(\alpha + p(1 + s)\big)^{\nu_3 - \nu_2} \big(\alpha + p^2 + ps + p\big)^{-\nu_3} 
+\end{aligned}
+$$
+So then the general form would be something like this (omitting the $\Phi_0(\dots)$ contribution for simplicity):
+$$
+\begin{aligned}
+\Phi_{X_n}(s) &\propto \alpha^{\nu_1} P_n ^{-\nu_n} \prod_{k=1}^{n-1} P_k ^{\nu_k - \nu_{k - 1}}, \text{ where } P_k = \alpha + p+s \sum_{m=1}^{k-1}p^m
+\end{aligned}
+$$
+Since $\nu_k - \nu_{k -1} \neq 0$ by assumption of time-varying shape terms, the product does not reduce to a gamma distribution form (although it may converge), and hence we cannot write $\Phi_{X_n}(s)$ as a Gamma distribution as $n \to \infty$.
+
+
+### Variable Scale
+
+Similarly to earlier, should we allow the scale to vary with time, i.e. $\alpha \to \alpha_t$, there are a few notable changes.
+
+Firstly, for a fixed $X_n = x$ we still have:
+$$
+\{\mathcal{L}_{\alpha_n \ast X}^{*}\}(s) = \exp(-\frac{p \alpha_n x s}{\alpha_n + s})
+$$
+However, this is now dependent on $\alpha_n$, implying that
+$$
+\begin{aligned}
+\mathbb{E}[\exp(-sX_n) \mid X_{n-1} = x] &=  \mathbb{E}[\exp(-s\varepsilon_n)]\mathbb{E}\big[ -(\alpha \ast X_{n-1}) \mid X_{n-1} = x \big] \\ &=\Big(\dfrac{\alpha_n}{s + \alpha_n}\Big)^{\nu}\exp\Big( \dfrac{-p \alpha_{n-1} x s}{\alpha_{n-1} + s} \Big)
+\end{aligned}
+$$
+
+Thus, the LT of the unconditional PDF of $X_n$ (Derivation 2.2.2) faces a similar problem to before, since
+
+$$
+\Phi_{X_n}(s) = \Big(\dfrac{\alpha_n}{s + \alpha_n}\Big)^{\nu} \Phi_{X_{n-1}}\Big( \dfrac{p \alpha_{n-1}  s}{\alpha_{n-1} + s} \Big)
+$$
+Which means that upon solving recursively (for, say, $n = 2$) we have:
+
+$$
+\begin{aligned}
+\Phi_{X_2}(s) &= \Big(\dfrac{\alpha_2}{s + \alpha_2}\Big)^{\nu} \Phi_{X_{1}}\Big( \dfrac{p \alpha_{1}  s}{\alpha_{1} + s} \Big) \\
+&=  \Big(\dfrac{\alpha_2}{s + \alpha_2}\Big)^{\nu} \bigg[\Big(\dfrac{\alpha_1}{ \frac{p \alpha_{1}  s}{\alpha_{1} + s} + \alpha_1}\Big)^{\nu} \Phi_{X_{0}}\Big( \dfrac{\alpha_{0}p  \frac{p \alpha_{1}  s}{\alpha_{1} + s}}{\alpha_{0} +\frac{p \alpha_{1}  s}{\alpha_{1} + s}} \Big) \bigg] \\
+&=  \Big(\dfrac{\alpha_2}{s + \alpha_2}\Big)^{\nu}  \Big( \frac{\alpha_1 + s}{\alpha_1 + s + ps}\Big)^{\nu} \Phi_{X_{0}}\Big( \frac{\alpha_0 \alpha_1 p^2s}{\alpha_0\alpha_1 + \alpha_0s + p \alpha_1 s} \Big) 
+\end{aligned}
+$$
+Notice that the third term in the product $\Phi_{X_0}(\dots)$ doesn't simplify as nicely as before. Because $\alpha_1 \neq \alpha_0$, we cannot factor out the $\alpha$ term as we did before.
+
+
+This means that in the $n \geq 3$ cases we lose the telescoping property. 
+$$
+\Phi_{X_3}(s)  = \Big(\dfrac{\alpha_3}{s + \alpha_3}\Big)^{\nu}  \Big( \frac{\alpha_2 + s}{\alpha_2 + s + ps}\Big)^{\nu}\Big( \frac{ \alpha_1 \alpha_2+\alpha_2 p^2s + \alpha_1 s + p \alpha_2 }{\alpha_1 \alpha_2 + \alpha_1s + p \alpha_2 s}\Big)^{\nu} \Phi_{X_{0}}(\dots)
+$$
+
+Thus, this form doesn't converge to a Gamma distribution, either. 
+
+## Which Factors Still Hold?
+
+If we allow $\nu$ to vary with time, the LT of the PDF of the conditional density of $X_n$ remains
+
+$$
+\{\mathcal{L}_{X_n | X_{n-1}}^{\star}\}(s) =\mathbb{E}[\exp(-sX_n) \mid X_{n-1} = x] =  \Big(\dfrac{\alpha}{s + \alpha}\Big)^{\nu_n}\exp\Big( \dfrac{-p\alpha x s}{\alpha + s} \Big)
+$$
+From this, we could theoretically compute the inverse Laplace transform and construct a log-likelihood function 
+
+$$
+\ell(\boldsymbol{\theta}; x_0, x_1, \dots x_n)\propto \sum_{t = 1}^n \log(\{\mathcal{L}_{X_n | X_{n-1}}^{\star}(s)\}^{-1} ) = \sum_{t=1}^n f_{X_t \mid X_{t-1}}(x_t \mid x_{t-1})
+$$
+However, in doing this we could not admit that our $X_t$ are Gamma-distributed. We could allow $X_t$ to be our DKR process, and consider this 
+
+### Conclusion
+
+Since neither adjustment converges $X_n$ to a Gamma distribution, the subsequent derivations and properties will not hold either. Further, we cannot use it for our DKR model by the lack of Gamma-distributed $X_n$, which we had intended to equate our model to one of the coefficients with. 

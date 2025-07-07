@@ -1,0 +1,158 @@
+---
+title: "Non-Normal Time Series Estimation"
+subtitle: "Replication Study: Implementation"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    latex_engine: xelatex 
+---
+
+## Introduction
+
+TODO
+
+
+## Proof of 2.7: Conditional Density
+
+We now use the fact that each $X_{n}$ has $\Phi_{X_n}(s) = \big( 1 + \theta s\big)^{-\nu}$ (the so-called 'equilibrium version' used in 2.3.1 of the previous document) which defines a Gamma distribution with shape $\nu$ and scale $\theta$ (equivalently, rate $1/\theta$) with corresponding marginal probability density function:
+
+$$
+f_{X_n}(x_n) = \frac{1}{\Gamma(\nu)\theta^{\nu}}x^{\nu -1}e^{-x/\theta}
+$$
+
+As well as bivariate joint density (2.6.1)
+
+$$
+f_{X_{n+j},X_n}(x, y) = \dfrac{1}{\Gamma(\nu)\theta^{\nu + 1}(1-p^j)}\Big( \frac{xy}{p^j}\Big)^{(\nu-1)/2} \exp\Big( \dfrac{-(x+y)}{\theta(1-p^j)}\Big)  I_{\nu-1}\Big( \dfrac{2 (p^j xy)^{1/2}}{\theta(1-p^j)}\Big)
+$$
+
+Consequently, the conditional density $f_{X_{t+j}|{X_t}}(x \mid y)$ can be computed as follows, letting the modified Bessel function component (rightmost term in the above) be written as $C_{xy}$ for simplicity. 
+$$
+\begin{aligned}
+f_{X_{t+j}|{X_t}}(x \mid y) &= \dfrac{f_{X_{t+j},X_t}(x, y)}{f_{X_t}(y)} \\
+&= \dfrac{\dfrac{1}{\Gamma(\nu)\theta^{\nu + 1}(1-p^j)}\Big( \dfrac{xy}{p^j}\Big)^{(\nu-1)/2} \exp\Big( \dfrac{-(x+y)}{\theta(1-p^j)}\Big)  C_{xy}}{\dfrac{1}{\Gamma(\nu)\theta^{\nu}}y^{\nu -1}\exp\big(-\dfrac{y}{\theta}\big)} \\
+&= \dfrac{\theta^{\nu - (\nu+1)}}{(1-p^j)}\Big( \dfrac{xy}{p^j}\Big)^{(\nu-1)/2}y^{-(\nu-1)} \exp\Big( \dfrac{-(x+y)}{\theta(1-p^j)} -\big(-\dfrac{y}{\theta}\big)\Big)C_{xy} \\
+&= {\dfrac{1}{\theta(1-p^j)}\Big( \dfrac{x}{p^jy}\Big)^{(\nu-1)/2}\exp\Big(-\dfrac{x + p^j y}{\theta(1-p^j)} \Big)I_{\nu-1}\Big( \dfrac{2 (p^j xy)^{1/2}}{\theta(1-p^j)}\Big)} 
+\end{aligned}
+$$
+Recalling that $\theta = 1/(\varphi(1-p))$, we can write the above as:
+$$
+\begin{aligned}
+f_{X_{t+j}|{X_t}}(x \mid y) &= \dfrac{\varphi(1-p)}{(1-p^j)}\Big( \dfrac{x}{p^jy}\Big)^{(\nu-1)/2}\exp\Big(-\varphi(1-p)\dfrac{x + p^j y}{(1-p^j)} \Big)I_{\nu-1}\Big(\varphi(1-p) \dfrac{2 (p^j xy)^{1/2}}{(1-p^j)}\Big)
+\end{aligned}
+$$
+
+Finally, letting $\zeta = \varphi(1 - p) / (1 - p^j)$, we have the derivation provided in  the labeled (2.7) of the Second Paper.
+
+$$
+\boxed{ f_{X_{t+j}|{X_t}}(x \mid y) = \zeta\Big( \dfrac{x}{p^jy}\Big)^{(\nu-1)/2} \exp\big(-\zeta (x + p^j y)\big) I_{\nu - 1}\big( 2\zeta (p^jxy)^{1/2}\big) }
+$$
+
+Where, in the above, $\varphi$ is the scale parameter of the underlying Gamma distribution (i.e. of the gamma-distributed errors $\varepsilon_t$), $\nu$ is the scale parameter and $p$ is the AR coefficient of order 1.
+
+Further, $I_r(x)$ is the modified Bessel function of the first kind and order $r$, given by ([source](https://en.wikipedia.org/wiki/Bessel_function)):
+$$
+I_r(x) = \sum_{m = 0}^{\infty} \dfrac{1}{m!\,\Gamma(m + \alpha +1)} \Big( \dfrac{x}{2}\Big)^{2m +a}
+$$
+### Log Conditional Density
+
+We will use the boxed equation above in the estimation of the model. However, we must first compute the log-density so that our `dlaggamma` function doesn't suffer from underflow (we will be using it for log-likelihoods).
+
+$$
+\begin{aligned}
+\log(f_{X_{t+j}|{X_t}}(x \mid y)) &= \log(\zeta) + \frac{\nu - 1}{2}  \Big(\log(x) - \log(y) - j\log(p)\Big) \\
+&\hspace{0.5cm} -\zeta (x + p^j y) + \log\big( I_{\nu - 1}\big( 2\zeta (p^jxy)^{1/2}\big) \big)
+\end{aligned}
+$$
+
+
+
+### Density Functions
+
+Now, we can implement this conditional density in `R`.
+
+```{r}
+dlaggamma <- function(x1, x2, phi, nu, p, j, use_log = FALSE) {
+  # argument checks
+  if (phi <= 0 || nu <= 0)
+      stop("phi and nu must be positive")
+  if (!(0 < p && p < 1))
+      stop("p must lie strictly between 0 and 1")
+  if (j < 1 || j != as.integer(j))
+      stop("j must be a positive integer")
+
+  # precompute constant term
+  zeta <- (phi * (1 - p)) / (1 - p^j)
+  # limit behaviour in corner cases
+  if (x2 == 0) {
+    out <- dgamma(x1, shape = nu, rate = zeta, log = use_log)
+   return(out)
+  }
+  # handling corner cases of x1
+  if (x1 == 0) {
+      if (nu < 1) {
+          return(if (use_log)  Inf else Inf)
+      }
+      if (nu == 1) {  
+          logdens <- log(zeta) - zeta * p^j * x2
+          return(if (use_log) logdens else exp(logdens))
+      }
+      return(if (use_log) -Inf else 0)
+  }
+  # precompute bessel terms for overflow
+  sqrt_term <- sqrt(p^j * x1 * x2)
+
+  log_bessel <- log(
+      besselI(2 * zeta * sqrt_term,
+              nu = nu - 1,
+              expon.scaled = TRUE)
+  ) + 2 * zeta * sqrt_term 
+  # compute density
+  out <- (log(zeta) + ((nu - 1) / 2) * (log(x1) - log(x2) - j * log(p))
+          - zeta * (x1 + p^j * x2) + log_bessel )
+  # return regular or log density
+  if (use_log == TRUE) {
+    return(out)
+  } else{
+    return(exp(out))
+  }
+}
+```
+
+## Parameter Estimation
+
+```{r, echo = FALSE, message = FALSE}
+data <- DKR::bigsur[DKR::bigsur$hydr_year < 10, ]
+
+library(dplyr)
+library(lubridate)
+
+monthly_data <- data %>%                           
+  mutate(month = floor_date(date, "month")) %>%   
+  group_by(month) %>% 
+  summarise(monthly_gauge = mean(gauge, na.rm = TRUE),
+            .groups = "drop") %>%
+  arrange(month)    
+
+
+start_year  <- year(monthly_data$month[1])
+start_month <- month(monthly_data$month[1])
+
+
+gauge_ts <- ts(
+  monthly_data$monthly_gauge,
+  start = c(start_year, start_month),
+  frequency = 12
+)
+
+stl_fit <- stl(gauge_ts, s.window = "periodic")
+deseasonalized <- pmax (gauge_ts - stl_fit$time.series[, "seasonal"], 1e-4)
+
+gauge_m_ds <- deseasonalized / sd(deseasonalized)
+hist(gauge_m_ds)
+```
+
+```{r, echo=FALSE}
+
+```
+

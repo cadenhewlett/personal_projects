@@ -1,0 +1,449 @@
+---
+title: "Non-Normal Time Series Estimation"
+format: pdf
+---
+
+## Introduction
+
+Consider a first-order autoregressive time series $X_t = \varphi X_{t-1} + \varepsilon_t$, where the marginal distribution is non-normal and $\{\varepsilon_t\}$ is a sequence of *iid* random variables with characteristic function given by the the Characteristic Function / Laplace-Stieltjes transform:
+
+$$
+\Phi_{\varepsilon}(s) = \dfrac{\Phi_X(s)}{\Phi_X(\varphi s)}
+$$
+
+Where $\Phi_X(s)$ is the Characteristic Function (CF) of the stationary non-normal series $\{X\}_t$.
+
+
+### Gamma AR(1) Process
+
+In this work, there is an estimation method for the gamma AR(1) process of Sim (1990). It replaces $\varphi X_{t-1}$ of the original model with $\varphi \ast X_{t-1}$, where $'\ast'$ is the discrete sum:
+
+$$
+\varphi \ast X = \sum_{i = 1}^{N(X)} W_i
+$$
+Where $W_i \overset{\text{iid}}{\sim} \text{Exp}(\beta)$  (rate parameter $\beta$) and for each fixed value of $x$, $N(x) \sim \text{Pois}(\varphi \beta x)$.
+
+
+Then, the AR(1) gamma model places marginal distribution $\text{Gamma}(\nu, \beta(1-\varphi))$ on each $X$, given by
+
+$$
+X_t = \varphi \ast X + \varepsilon_t
+$$
+
+In the above, $\{\varepsilon_t\}$ are gamma-distributed with rate $\beta$ and shape $\nu$.
+
+The marginal density of $\{X_t\}$ is given by:
+
+$$
+f_{X}(x_t) = \dfrac{1}{\Gamma(\nu)} \big(\beta(1 - \varphi) \big)^{\nu}x_t^{\nu - 1}\exp\Big(-\beta(1-\varphi)x_t \Big)
+$$
+This is found directly from the gamma PDF. 
+
+Further, the conditional density of $X_{t+j}$ given $X_{t}$ is given by...
+
+$$
+f_{X_{t+j} \mid X_t}(x \mid y) = \theta \Big( \dfrac{x}{\varphi^jy}\Big)^{(\nu -1)/2} \exp\Big(-\theta(x + \varphi^j y) \Big)I_{\nu - 1}(2 \theta (\varphi^j x y)^{1/2})
+$$
+Where $\theta = \beta(1-\varphi)/(1-\varphi^j)$, $\varphi \in (0,1)$  and $I_{r}(z)$ is the modified Bessel function of the first kind and of order $r$, given by
+
+$$
+I_r(z) = \sum_{k = 0}^{\infty} \dfrac{1}{k!\Gamma(k + r + 1)}\Big(\frac{z}{2} \Big)^{2k + r}
+$$
+Which in this case is of the form...
+$$
+I_{\nu - 1}(2 \theta (\varphi^j x y)^{1/2}) = \sum_{k = 0}^{\infty} \dfrac{1}{k!\Gamma(k + \nu)}\big(\theta (\varphi^j x y)^{1/2}\big)^{2k + \nu -1}
+$$
+
+### Model Estimation
+
+$$
+\mathscr{L}(\boldsymbol{\theta}; x_0, x_1, \dots x_n) = \log(f_X(x_0)) + \sum_{i = 1}^n \log f_{X \mid X_{t-1}}(x_t \mid x_{t-1})
+$$
+
+
+#### Calculations
+
+$$
+\begin{aligned}
+\Phi_X(s) &= \mathbb{E}[\exp(-sX_n)] = \mathbb{E}[\exp(-s(\varphi X_{n-1} + \varepsilon_n))]  \\
+&= \mathbb{E}[\exp(-s\varphi X_{n-1})\exp(-s\varepsilon_n)] \\
+&= \mathbb{E}[\exp(-s\varphi X_{n-1})]\mathbb{E}[\exp(-s\varepsilon_n)] \\
+&= \Phi_X(\varphi s)\Phi_{\varepsilon}(s)
+\end{aligned}
+$$
+
+## Setup
+
+The general structure of the autoregressive gamma model explored in this paper is given as follows:
+
+$$
+X_n = \varphi \ast X_{n-1} + \varepsilon_n
+$$
+Where $\varepsilon_n \overset{\text{iid}}{\sim} \text{Gamma}(\varphi, \nu)$, for shape parameter $\varphi$ and scale parameter $\nu$. 
+
+While $\varphi$ informs the magnitude of the autoregressive process, it is not the same as an AR parameter in a standard Gaussian system. Indeed,
+
+$$
+\varphi \ast X = \sum_{i = 1}^{N(X)}W_i
+$$
+Where $W_i \overset{\text{iid}}{\sim} \text{Exponential}(\varphi)$ and $N(X) \mid X =x \sim \text{Poisson}(\lambda = p\varphi)$ for $p \in [0,1)$ Indeed, it is $p$ that informs the rate of the compound Poisson process, and thus the magnitude of time-dependency in the system. 
+
+As we will explore later, $p$ functions similarly to the AR parameter in the Gaussian system. The shape parameter $\varphi$ has an impact both in the shape of the gamma distribution and the consequent autoregressive structure, while $\nu$ solely informs the structure of the underlying Gamma distribution.
+
+
+### Proof of 2.1.1
+
+In this case, what is crucial is that for a fixed $X$, the poisson pmf is still multiplied by $x$ since it is a poisson Process, i.e.
+
+$$
+\mathbb{P}[N(X) = n \mid X =X] = \frac{(\lambda x)^n}{n!}\exp(- \lambda x)
+$$
+
+From the above, the Laplace transform of $\varphi \ast X$ for a fixed $X = x$ can be computed by recalling that the sum of independent random variables is equal to the convolution of their probability distributions. ([source](https://en.wikipedia.org/wiki/Laplace%E2%80%93Stieltjes_transform) )
+
+$$
+\begin{aligned}
+\{\mathcal{L}^{*}_{\varphi \ast X}(s)\} &= \sum_{n = 0}^{\infty} \mathbb{P}[N(x) = n]\big(\mathbb{E}[-sW]\big)^n \\
+&= \sum_{n = 0}^{\infty}  \frac{(\lambda x)^n}{n!}\exp(- \lambda x)\big(M_W(-s))^n \\
+&= \sum_{n = 0}^{\infty}  \frac{(\lambda x)^n}{n!}\exp(- \lambda x) \Big( \dfrac{\varphi}{\varphi + s} \Big)^n  \\
+&= \exp(- \lambda x)\sum_{n = 0}^{\infty}  \frac{1}{n!} \Big( \dfrac{\lambda x\varphi}{\varphi + s} \Big)^n \\
+\end{aligned}
+$$
+This simplification yields the setup the authors use in $2.1.1$, with the exponential term independent of $n$ taken out of the sum.
+
+### Proof of 2.1.2
+
+From the above, we notice that 
+
+
+Finally, using the power series expansion of the exponential function, 
+$$
+\exp(a) = \sum_{n = 0}^{\infty} \frac{1}{n!}a^n
+$$
+
+The author's result follows:
+$$
+\begin{aligned}
+\{\mathcal{L}^{*}_{\varphi \ast X}(s) \}&= \exp(-\lambda x)\exp\Big( \dfrac{\lambda x\varphi}{\varphi + s} \Big) \\
+&= \exp\big(-\lambda x  (1-\dfrac{\varphi}{\varphi + s} ) \big) \\
+&= \boxed{\exp\Big( \dfrac{-\lambda x s}{\varphi + s} \Big)}
+\end{aligned}
+$$
+
+From this construction, the authors establish equation 2.2, the Laplace transform of a singular $X_n$ conditioned on a fixed prior observation $X_{n-1}$. The below follows from the independence of $\varepsilon_t$ from the cumulative process $\varphi \ast X_{n-1}$, yields
+
+$$
+\begin{aligned}
+\mathbb{E}[\exp(-sX_n) \mid X_{n-1} = x] &= \mathbb{E}[\exp\big(-s( \varphi \ast X_{n-1} + \varepsilon_n) \big) \mid X_{n-1} = x] \\
+&= \mathbb{E}[-s\varepsilon_t]\mathbb{E}[-s(\varphi \ast X_{n-1})\mid X_{n-1} = x] \\
+&= \boxed{ \Big(\dfrac{\varphi}{s + \varphi}\Big)^\nu\exp\Big( \dfrac{-\lambda x s}{\varphi + s} \Big)} \;\; \text{ result 2.2}
+\end{aligned}
+$$
+
+Then, the authors allow $\Phi_{X_n}(s)$ to be the Laplace transform of the PDF of $X_n$, i.e.
+$$
+\Phi_{X_n}(s) = \mathbb{E}[\exp(-sX_n)], \text{ for } s \geq 0
+$$
+From the above (conditional) LT, it follows by the Law of Total Expectation that 
+$$
+\begin{aligned}
+\mathbb{E}[\exp(-sX_n)] &= \mathbb{E}\Big[ \mathbb{E}[\exp(-sX_n) \mid X_{n-1}] \Big] \\
+\Phi_{X_n}(s) &= \mathbb{E}\Big[ \Big(\dfrac{\varphi}{s + \varphi}\Big)^\nu\exp\Big( \dfrac{-\lambda X_{n-1} s}{\varphi + s} \Big) \Big] \\
+&=  \Big(\dfrac{\varphi}{s + \varphi}\Big)^\nu\mathbb{E}\Big[\exp\Big( -X_{n-1} \dfrac{\lambda  s}{\varphi + s} \Big) \Big] \\
+&=  \Big(\dfrac{\varphi}{s + \varphi}\Big)^\nu\Phi_{X_{n-1}} \Big( \dfrac{\lambda  s}{\varphi + s} \Big) \\
+&=  \Big(\dfrac{\varphi}{s + \varphi}\Big)^\nu \Phi_{X_{n-1}} \Big( \dfrac{\varphi p  s}{\varphi + s} \Big), \text{ recalling } \lambda = \varphi p
+\end{aligned}
+$$ 
+
+
+Setting up a simple recursive environment for $n = 2$
+
+$$
+\Phi_{X_2} = \Big(\dfrac{\varphi}{s + \varphi}\Big)^\nu \Phi_{X_{1}} \Big( \dfrac{\varphi p  s}{\varphi + s} \Big) 
+$$
+Then, using the new Laplace variable $u = {\varphi p  s}/{\varphi + s}$ (because we must substitute each time for consistency),
+
+$$
+\begin{aligned}
+\Phi_{X_2} &= \Big(\dfrac{\varphi}{s + \varphi}\Big)^\nu \bigg(\Big(\dfrac{\varphi}{u + \varphi}\Big)^{\nu} \Phi_{X_{0}} \Big( \dfrac{\varphi p  u}{\varphi + u} \Big) \bigg) \\
+ &= \Big(\dfrac{\varphi}{s + \varphi}\Big)^\nu \bigg(\Big(\dfrac{\varphi}{\frac{\varphi p s}{\varphi + s} + \varphi}\Big)^{\nu} \Phi_{X_{0}} \Big( \dfrac{\varphi p  \frac{\varphi p s}{\varphi + s}}{\varphi + \frac{\varphi p s}{\varphi + s}} \Big) \bigg) \\
+  &= \Big(\dfrac{\varphi}{s + \varphi}\Big)^\nu \Big(  \dfrac{\varphi}{\varphi\big[\frac{\varphi + s +ps}{\varphi + s}\big]}\Big)^{\nu}  \Phi_{X_{0}} \Big( \dfrac{\varphi p  ({\varphi p s})}{\varphi({\varphi + s}) + {\varphi p s}} \Big)  \\
+    &= \Big(\dfrac{\varphi}{s + \varphi}\Big)^\nu \Big(  \dfrac{\varphi + s}{\varphi + p(1 + s)}\Big)^{\nu}  \Phi_{X_{0}} \Big( \dfrac{\varphi p^2 s}{\varphi + p(1 + s)} \Big)  \\
+     &= \Big(\dfrac{\varphi}{\varphi + p(1 + s)}\Big)^{\nu}  \Phi_{X_{0}} \Big( \dfrac{\varphi p^2 s}{\varphi + p(1 + s)} \Big)
+\end{aligned}
+$$
+
+From the above, the following general pattern emerges:
+
+$$
+\Phi_{X_n}(s)= \Big(\dfrac{\varphi}{\varphi + s\sum_{k = 0}^{n-1}p^k}\Big)^{\nu}  \Phi_{X_{0}} \Big( \dfrac{\varphi p^n s}{\varphi + s\sum_{k = 0}^{n-1}p^k} \Big)
+$$
+
+Notice that if there is no serial correlation (i.e. $p = 0$) that the formula will be identical in each iterate (i.e. only dependent on $\varphi$, $s$ and $\Phi_{X_0}(\cdot)$).
+
+
+Recall that in the above, $p \in [0, 1)$. Thus, we can employ the geometric sum equation:
+$$
+\sum_{k = 0}^{n-1}p^k = \dfrac{1-p^n}{1-p}
+$$
+This allows us to simplify the previous into the form presented by the authors:
+$$
+\begin{aligned}
+\Phi_{X_n}(s) &= \Big(\dfrac{\varphi}{\varphi + s\frac{1-p^n}{1-p} }\Big)^{\nu}  \Phi_{X_{0}} \Big( \dfrac{\varphi p^n s} {\varphi + s\frac{1-p^n}{1-p}} \Big) \\
+&= \Big(\dfrac{\varphi}{\varphi + s\frac{1-p^n}{1-p} }\Big)^{\nu}  \Phi_{X_{0}} \Big( \dfrac{\varphi p^n s} {\varphi + s\frac{1-p^n}{1-p}} \Big) \\
+&= \Big(\dfrac{\varphi}{\frac{\varphi(1-p)+ s(1-p^n)}{1-p} }\Big)^{\nu}  \Phi_{X_{0}} \Big( \dfrac{\varphi p^n s}{\frac{\varphi(1-p)+ s(1-p^n)}{1-p} } \Big) \\
+&= \Big(\dfrac{\varphi({1-p})}{{\varphi(1-p)+ s(1-p^n)} }\Big)^{\nu}  \Phi_{X_{0}} \Big( \dfrac{\varphi p^n (1-p) s}{{\varphi(1-p)+ s(1-p^n)} } \Big) \\
+&= \Big(\dfrac{\frac{1}{\theta}}{{\frac{1}{\theta}+ s(1-p^n)} }\Big)^{\nu}  \Phi_{X_{0}} \Big( \dfrac{\frac{1}{\theta} p^n  s}{{\frac{1}{\theta}+ s(1-p^n)} } \Big), \text{ where } {\theta} = \frac{1}{\varphi(1-p)} \\
+&= \Big(\dfrac{\frac{1}{\theta}}{{\frac{1+ \theta s(1-p^n)}{\theta}} }\Big)^{\nu}  \Phi_{X_{0}} \Big( \dfrac{\frac{1}{\theta} p^n  s}{{\frac{1+ \theta s(1-p^n)}{\theta}} } \Big) \\
+&= \Big(\dfrac{1}{{1+ \theta s(1-p^n)} }\Big)^{\nu}  \Phi_{X_{0}} \Big(\dfrac{ p^n  s}{{{1+ \theta s(1-p^n)}} } \Big) \\
+&= \Big(\big({{1+ \theta s(1-p^n)} }\big)^{-1}\Big)^{\nu}  \Phi_{X_{0}} \Big(\dfrac{ p^n  s}{{{1+ \theta s(1-p^n)}} } \Big) \\
+&= \boxed{ \big({ {1+ \theta s(1-p^n)} }\big)^{-\nu}  \Phi_{X_{0}} \Big(\dfrac{ p^n  s}{{{1+ \theta s(1-p^n)}} } \Big) } \;\;\; (\star)
+\end{aligned}
+$$
+
+Yielding the cited result on Page 327.  Directly, the above tends to $(1 + \theta s)^{-\nu}$ as $n \to \infty$, as the $p^n$ terms decay to zero. From this, we can observe that:
+$$
+\begin{aligned}
+(1 + \theta s)^{-\nu} &= \Big(\frac{1}{1 + \theta s} \Big)^{\nu} = \Big(\frac{\theta^{-1}}{\theta^{-1} +  s} \Big)^{\nu} 
+\end{aligned}
+$$
+Now, recalling the Laplace transform of a Gamma distributed random variable with shape $\lambda$ and rate $\nu$ (derived in the appendix and used earlier), it follows that $X_n$ asymptotically approaches a Gamma$(\theta^{-1}, \nu)$ distribution.
+
+
+Indeed, in the parts to follow, the authors assume that the process $\{X_n\}_{n \in \mathbb{N}}$ is in equilibrium; hence, $\Phi_{X_n}(s) = (1 + \theta s)^{-\nu}$ for all $n$. 
+
+## Joint PDF : Proof of 2.3
+
+
+### Setup: 2.3.1
+
+By using the Laplace Transform $\Phi_{X_n}(s)$ derived earlier, we can derive the LT of the joint PDF of $X_n$ and $X_{n-1}$ using the law of total expectation.
+
+The authors use the suffix '$2$' in this case. 
+
+The following simplification follows from using Equation 2.2 and the nested/Markovian properties of $\{X_n\}$. 
+
+$$
+\begin{aligned}
+\Phi_{2}(s_2, s_1) &= \mathbb{E}[\exp(-s_2 X_n -s_1 X_{n-1})]  \\
+&= \mathbb{E}\Big[\exp(-s_1 X_{n-1}) \underbrace{\mathbb{E}[\exp(-s_2 X_n \mid X_{n-1})]}_{\text{Equation 2.2}}\Big] \\
+&= \mathbb{E}\Big[\exp(-s_1 X_{n-1}) \Big(\dfrac{\varphi}{s_2 + \varphi}\Big)^\nu\exp\Big( -X_{n-1} \dfrac{\varphi p  s_2}{\varphi + s_2} \Big)\Big] \\ 
+&=  \Big(\dfrac{\varphi}{s_2 + \varphi}\Big)^\nu\mathbb{E}\Big[\exp\Big( -X_{n-1} \underbrace{\big(s_1 + \dfrac{\varphi p  s_2}{\varphi + s_2}}_{\text{Define as } \varrho} \big)\Big)\Big] \\
+&=  \Big(\dfrac{\varphi}{s_2 + \varphi}\Big)^\nu\mathbb{E}\Big[\exp\big( -X_{n-1} \varrho \big) \Big] \\
+&=  \Big(\dfrac{\varphi}{s_2 + \varphi}\Big)^\nu \Phi_{X_{n-1}}(\varrho) 
+\end{aligned}
+$$
+
+In the above, I set up the first line by definition of a bivariate Laplace transform. Then, in the second line, I expand the expectation using the Law of Total Expectation. This establishes a conditional of the form already established in Equation 2.2, which I substitute in the third line. Then, on the fourth line, I combine the exponential product into a single term and define a variable $\varrho$ as the object of the LT argument $\{\mathcal{L}^{*}\}(\cdot)$. After substitution, in the fifth line, the system simplifies significantly and the final (sixth) line is in terms of the previously-defined LT $\Phi$.
+
+
+Then, the authors use the simplified equilibrium version of $\Phi_X(\cdot)$ to continue the simplification from this sixth line. The equilibrium version of the LT doesn't contain the $\Phi_{X_0}(\dots)$ term, and is given by
+
+$$
+\Phi_{X_n}(s) = \big( 1 + \theta s\big)^{-\nu}, \text{ where } \theta = \dfrac{1}{\varphi(1-p)}
+$$
+
+The above is assumed to be true for all $n$, since the previous simplification in $(\star)$ tends to the above as $n \to \infty$ as discussed at the end of the previous section. 
+
+### Proof of 2.3.2
+
+Using the equilibrium version of $\Phi_{X_n}(s)$, we substitute 
+
+$$
+\begin{aligned}
+\Phi_{2}(s_2, s_1) &=  \Big(\dfrac{\varphi}{s_2 + \varphi}\Big)^\nu (1 + \theta \varrho)^{- \nu}
+\end{aligned}
+$$
+Now, we expand $\varrho$ and express it in terms of $\theta$ rather than $\varphi$.
+
+$$\varrho = s_1 + \frac{\varphi p  s_2}{\varphi + s_2} = s_1 + \frac{ps_2}{1 + \theta(1-p)s_2}$$
+
+Now, we substitute this definition of $\varrho$ and simplify using the fact that $1/\varphi = \theta(1-p)$
+
+$$
+\begin{aligned}
+\Phi_{2}(s_2, s_1) &=  \Big(\dfrac{\varphi}{s_2 + \varphi}\Big)^\nu \Big(1 + \theta \Big(  s_1 + \frac{ps_2}{1 + \theta(1-p)s_2} \Big) \Big)^{- \nu}  \\
+&=  \Big(1+\frac{s_2}{\varphi} \Big)^{-\nu} \Big(1 + \theta \Big(  \frac{ s_1 + \theta(1-p)s_1 s_2 + ps_2}{1 + \theta(1-p)s_2} \Big) \Big)^{- \nu} \\
+&=  \Big(1+\theta(1-p)s_2\Big)^{-\nu} \Big(1 +  \frac{  \theta s_1 + \theta^2(1-p)s_1 s_2 +  \theta ps_2}{1 + \theta(1-p)s_2} \Big)^{- \nu} \\
+&=  \Big( \big(1+\theta(1-p)s_2\big) \cdot\frac{ 1 + \theta s_2 - \theta ps_2+ \theta s_1 + \theta^2(1-p)s_1 s_2 +  \theta ps_2}{1 + \theta(1-p)s_2} \Big)^{- \nu} \\
+&=  \big( 1 + \theta (s_1 + s_2) + \theta^2(1-p)s_1 s_2  \big)^{- \nu} 
+\end{aligned}
+$$
+Yielding the cited result in $(2.3)$.
+
+
+## Proof of 2.4
+
+We now generalize this process for the LT of the joint pdf of $X_1, \dots, X_n$.
+
+$$
+\Phi_n(s_n, s_{n-1}, \dots, s_1) = \mathbb{E}\big[ \underbrace{\mathbb{E}[\exp(-s_n X_n) \mid X_{n-1}]}_{\text{Equation 2.2}} \exp(-s_{n-1}X_{n-1} - \dots - s_1 X_1) \big]
+$$
+
+Again, we identify the conditional component as Equation 2.2, derived earlier. 
+Thus,
+
+$$
+\Phi_n(s_n, s_{n-1}, \dots, s_1) = \mathbb{E}\Big[ \big( 1 + \theta(1-p)s_n\big)^{-\nu}\exp\Big( -X_{n-1}\dfrac{\varphi p s_n}{\varphi + s_n}\Big) \exp(-s_{n-1}X_{n-1} - \dots - s_1 X_1) \Big]
+$$
+
+Now, following the simplification we did for $\varrho$ earlier, it follows that 
+$$
+\begin{aligned}
+\Phi_n(s_n, s_{n-1}, \dots, s_1) &=  \big( 1 + \theta(1-p)s_n\big)^{-\nu} \mathbb{E}\Big[\exp\Big( -X_{n-1} \dfrac{ p s_n}{1 + \theta(1-p)s_n}\Big) \exp(-s_{n-1}X_{n-1} - \dots - s_1 X_1) \Big] \\
+&= \big( 1 + \theta(1-p)s_n\big)^{-\nu} \mathbb{E}\Big[\exp(-X_{n-1}\Big(s_{n-1} + \dfrac{ p s_n}{1 + \theta(1-p)s_n}\Big) - s_{n-2} X_{n-2}-\dots - s_1 X_1) \Big]
+\end{aligned}
+$$
+
+Then, by definition of Laplace transform and our iterative structure (explored earlier in our lag-2 recursive example and in the derivation of $\Phi_{2}(s_2, s_1)$), we have that
+
+$$
+\begin{aligned}
+\Phi_n(s_n, s_{n-1}, \dots, s_1) &=  \big( 1 + \theta(1-p)s_n\big)^{-\nu} \mathbb{E}\Big[\exp\Big( -X_{n-1} \dfrac{ p s_n}{1 + \theta(1-p)s_n}\Big) \exp(-s_{n-1}X_{n-1} - \dots - s_1 X_1) \Big] \\
+&= \big( 1 + \theta(1-p)s_n\big)^{-\nu} \Phi_{{n-1}}\Big(s_{n-1} + \dfrac{ p s_n}{1 + \theta(1-p)s_n}, s_{n-2}, \dots, s_1 \Big)
+\end{aligned}
+$$
+
+Then, letting $G(s_j) = {p s_j} / {1 + \theta(1-p)s_j}$, we arrive at the simplification in Step 2.4.
+
+$$
+\Phi_n(s_n, s_{n-1}, \dots, s_1) = \big( 1 + \theta(1-p)s_n\big)^{-\nu} \Phi_{{n-1}}\Big(s_{n-1} + G(s_n), s_{n-2}, \dots, s_1 \Big) \;\;\; \square
+$$
+
+## Proof of 2.5: Primary Result of the Work
+ 
+ 
+Notice that a recursive relationship exists in the above derivation. In this section, we will expand this to a general form for the LT of the joint PDF.
+
+
+We now introduce a bit of nomenclature that the authors bring forward in the 'Introduction' section. Let $\mathbf{I}_n$ be the $n$-dimensional identity matrix, with $1$s along the diagonal and zero elsewhere. 
+
+Further, let
+
+$$
+\mathbf{S}_n = \begin{bmatrix} s_1 & s_2 & \dots &s_n\end{bmatrix} \times \mathbf{I}_n, \text { and } \mathbf{V}_n = \begin{bmatrix} 1 & p^{1/2} & p & p^{3/2}&\dots &p^{|1-n|/2}  \\
+p^{1/2} & 1 & p^{1/2} & p & \dots & p^{|2-n|/2} \\
+p & \ddots & \ddots & \ddots & \ddots & \vdots \\
+p^{|n-1|/2} &  \dots  &  \dots  & \dots  &\dots &1
+\end{bmatrix}, \text{ with } v_{ij} = p^{|i-j|/2} 
+$$
+
+The authors then define $\mathbf{A}_n = \mathbf{I}_n + \theta \mathbf{S}_n \mathbf{V}_n$ and claim that for all $n \geq 1$ that 
+
+$$
+\Phi_n(s_n, \dots, s_1) = \det(\mathbf{A}_n)^{-\nu} = \det(\mathbf{I}_n + \theta \mathbf{S}_n \mathbf{V}_n)^{- \nu}
+$$
+
+Following the author's argument, I proceed by mathematical induction.
+
+
+### Base Case
+
+In the base case, we have: 
+
+$$
+\begin{aligned}
+\det(\mathbf{A}_1)&= (\begin{bmatrix} 1 \end{bmatrix} + \theta \begin{bmatrix} s_1\end{bmatrix}\begin{bmatrix} 1 \end{bmatrix})^{- \nu}= (1 + \theta s_1)^{-\nu}\\
+\end{aligned}
+$$
+Which matches our previous result.
+
+### "Inductive" Step
+
+I tried for many hours to get this to work for general $n$... but I couldn't figure it out. 
+
+
+So instead let's look at $n = 2$ case (since we can compute $2 \times 2$ determinants by hand.)
+
+
+To see the linear algebra in action, we consider the $n = 2$ case since the $n = 1$ case only includes scalars and trivially holds .
+
+Here, we write $\mathbf{A}_2$ as 
+
+$$
+\begin{aligned}
+\mathbf{A}_2 &= \begin{bmatrix} 1 & 0 \\  0 & 1 \end{bmatrix} + \theta \begin{bmatrix} s_1 & 0 \\  0 & s_2 \end{bmatrix}\begin{bmatrix} 1 & p^{1/2} \\  p^{1/2} & 1 \end{bmatrix} \\
+\mathbf{A}_2 &=  \begin{bmatrix} 1+ \theta s_1 & \theta s_1 p^{1/2} \\  \theta s_2p^{1/2}  & 1+ \theta s_2 \end{bmatrix} \\
+\end{aligned}
+$$
+Then, the determinant to the power of $-\nu$ is computed as
+$$
+\begin{aligned}
+\det(\mathbf{A}_2)^{- \nu} &= \Big( ( 1+ \theta s_1 )(1+ \theta s_2) - (\theta s_2 p^{1/2} \theta s_1 p^{1/2}) \Big)^{- \nu}\\
+&= \big( 1 + \theta s_1 + \theta s_2 + \theta^2 s_1 s_2 - \theta^2 s_1 s_2 p \big)^{- \nu} \\
+&= \big( 1 + \theta s_1 + \theta s_2 + \theta^2 (1-p) s_1 s_2\big)^{- \nu}
+\end{aligned}
+$$
+
+This matches our previous derivation fo $(2.3)$, and shows that the general solution will hold via induction.
+
+
+## Proof of 2.6
+
+Now, the authors use the previously established theorem to write an equation for the LT of the joint density of $X_n$ and $X_{n+j}$ for lag $j$. Since the process is Markovian (and thus time-invariant), they utilize the LT of the joint PDF of $1$ and $1 + j$. 
+
+
+Specifically, the authors claim that:
+
+$$
+\Phi_{j+1}(s_{j+1}, 0, \dots, 0, s_1) = \big(1 + \theta(s_1 + s_{j+1}) + \theta^2(1 - p^{j}) s_1s_{j+1}\big)^{-\nu}
+$$
+This is an important result, as the un-transformed version forms the bivariate joint PDF for an observation $X_n$ and a lagged observation $X_{n+j}$.
+
+
+*Proof*
+
+To prove this, we will use the result 2.5. We write $\mathbf{S}_{j+1} = \text{diag}(s_1, 0,\dots,0, s_{j+1})$, and let $\mathbf{V}_{j+1}$ be as stated with $v_{ij} = p^{|i-j|/2}$.
+
+
+Notice that $\mathbf{S}_{j+1}$ contains only two elements. We can thus write it as:
+$$
+\mathbf{S}_n = s_1e_1 e_1^{\top} + s_{j+1}e_{j+1}e_{j+1}^{\top} 
+$$
+And thus, when multiplied by $\mathbf{V}_{j+1}$, we can rearrange as follows:
+$$
+\begin{aligned}
+\mathbf{S}_n \mathbf{V}_n &= s_1e_1 e_1^{\top}\mathbf{V}_{j+1} + s_{j+1}e_{j+1}e_{j+1}^{\top}\mathbf{V}_{j+1} \\
+&= \begin{bmatrix}s_1e_1&s_{j+1}e_{j+1}\end{bmatrix}\begin{bmatrix} e_1^{\top}\mathbf{V}_{j+1}  \\ e_{j+1}^{\top}\mathbf{V}_{j+1} 
+\end{bmatrix} \\
+&= \mathbf{U}\mathbf{W}\\
+\text{Letting }\mathbf{W} = &\begin{bmatrix} e_1^{\top}\mathbf{V}_{j+1}  \\ e_{j+1}^{\top}\mathbf{V}_{j+1} \end{bmatrix}, \mathbf{U} = \begin{bmatrix}s_1e_1&s_{j+1}e_{j+1}\end{bmatrix}
+\end{aligned}
+$$
+
+Notice that $\mathbf{U}_{(j+1) \times 2}\mathbf{W}_{2 \times (j+1)}$ is a $(j+1)\times(j+1)$ matrix, hence it has a difficult to compute determinant. However, the Weinstein–Aronszajn identity ([source](https://en.wikipedia.org/wiki/Weinstein%E2%80%93Aronszajn_identity)) states that, for matrice $\mathbf{A}$ and $\mathbf{B}$ of dimensions $m \times n$ and $n \times m$ respectively, that:
+
+$$
+\det(I_n + \mathbf{A}\mathbf{B}) = \det(I_m + \mathbf{B}\mathbf{A})
+$$
+
+Recall that Equation $(2.5)$ is of this exact structure. We can thus write
+
+$$
+\Phi_{j+1}(s_{j+1}, 0, \dots, 0, s_1)  =\det(\mathbf{I}_{j + 1} + \theta \mathbf{S}_n \mathbf{V}_n)^{-\nu}  = \det(\mathbf{I}_{j + 1} + \theta \mathbf{U} \mathbf{W})^{-\nu}  = \det(\mathbf{I}_{2} + \theta \mathbf{W} \mathbf{U})^{-\nu} 
+$$
+The $2 \times 2$ computation of $\mathbf{W} \mathbf{U}$ is rather direct.
+
+$$
+\begin{aligned}
+\mathbf{W}\mathbf{U} &= \begin{bmatrix} e_1^{\top}\mathbf{V}_{j+1}  \\ e_{j+1}^{\top}\mathbf{V}_{j+1} 
+\end{bmatrix}\begin{bmatrix}s_1e_1&s_{j+1}e_{j+1}\end{bmatrix} \\
+&= \begin{bmatrix} e_1^{\top}\mathbf{V}_{j+1}e_1s_1  & e_1^{\top}\mathbf{V}_{j+1}e_{j+1}s_{j+1} \\ e_{j+1}^{\top}\mathbf{V}_{j+1}  e_1s_1 & e_{j+1}^{\top}\mathbf{V}_{j+1}  e_{j+1}s_{j+1}
+\end{bmatrix} \\
+&= \begin{bmatrix} v_{11}s_1  & v_{1(j+1)}s_{j+1} \\ v_{(j+1)1}s_1 & v_{(j+1)(j+1)}s_{j+1} \end{bmatrix} \\
+&= \begin{bmatrix} p^{|1-1|/2}s_1  & p^{|1-(j+1)|/2}s_{j+1} \\ p^{|(j+1)-1|/2}s_1 & p^{|(j+1)-(j+1)|/2}s_{j+1} \end{bmatrix} \\ 
+&= \begin{bmatrix} s_1  & p^{j/2}s_{j+1} \\ p^{j/2}s_1 & s_{j+1} \end{bmatrix}
+\end{aligned}
+$$
+From this simplification of $\mathbf{W}\mathbf{U}$, we can compute the determinant
+
+$$
+\begin{aligned}
+\Phi_{j+1}(s_{j+1}, 0, \dots, 0, s_1)  &= \det(\mathbf{I}_{2} + \theta \mathbf{W} \mathbf{U})^{-\nu} \\
+&= \det\bigg(\begin{bmatrix} 1 & 0 \\ 0 & 1\end{bmatrix} + \theta\begin{bmatrix} s_1  & p^{j/2}s_{j+1} \\ p^{j/2}s_1 & s_{j+1} \end{bmatrix} \bigg) ^{-\nu} \\
+&= \det\bigg(\begin{bmatrix} 1 + \theta s_1  & \theta p^{j/2}s_{j+1} \\ \theta p^{j/2}s_1 & 1 + \theta s_{j+1} \end{bmatrix} \bigg)^{-\nu}  \\
+&= \big( (1 + \theta s_1)(1 + \theta s_{j+1}) - \theta^2p^{j}s_1s_{j+1} \big)^{- \nu} \\
+&= \big(1 + \theta(s_1 + s_2) - \theta^2 (1 - p^{j})s_1s_{j+1}\big)^{- \nu} \;\; \square
+\end{aligned}
+$$
+Yielding the cited result in 2.6
