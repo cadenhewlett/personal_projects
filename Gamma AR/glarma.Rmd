@@ -113,7 +113,7 @@ $$
 $$
 Or, in the expanded form, recalling Equation $3$ and Equation $1$
 $$
-g(\mu_t) = \underbrace{\sum_{i = 1}^k \left( \beta_{0i} + \beta_{1i} \left( \mathbf{z} \ast \mathbf{\kappa}_i \right)[t] \right) \cdot \left( \mathbf{x} \ast \mathbf{\kappa}_i \right)[t]}_{\text{DKR Component}}+ \underbrace{\sum_{j=1}^p \phi_j \big( g(y_{t-j}) - \mathbf{x}_{t-j}^{\top}\boldsymbol{\beta}\big) + \sum_{j=1}^q \theta_j \big( g(y_{t-j}) - \eta_j\big)}_{\text{ARMA Component}}
+g(\mu_t) = \underbrace{\sum_{i = 1}^k \left( \beta_{0i} + \beta_{1i} \left( \mathbf{z} \ast \mathbf{\kappa}_i \right)[t] \right) \cdot \left( \mathbf{x} \ast \mathbf{\kappa}_i \right)[t]}_{\text{DKR Component}}+ \underbrace{\sum_{j=1}^p \phi_j \big( g(y_{t-j}) - \tilde{y}_{t-j}\big) + \sum_{j=1}^q \theta_j \big( g(y_{t-j}) - \eta_{t-j}\big)}_{\text{ARMA Component}}
 $$
 Where $\mu_t$ is the Scale parameter in the conditional distribution of $y_t$ with density derived in the previous section as:
 $$
