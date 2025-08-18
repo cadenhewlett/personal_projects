@@ -1,0 +1,211 @@
+---
+title: 'Experiment: Koksilah River'
+author: "Caden Hewlett"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+library(DKR)
+library(pso)
+library(dplyr)
+library(knitr)
+library(kableExtra)
+source(here::here("Gamma AR", "GARMA_DKR", "garma_dkr_main.R"))
+```
+
+## Introduction
+
+This document is a preview and doesn't include everything that would normally be in a performance report. 
+
+In this experiment, I take the 'new' GARMA DKR object described in the previous reports and fit it to the Koksilah River watershed. 
+
+As usual, we allow $\mathbf{x}_t$ to be the rainfall and $\mathbf{y}_t$ to be the stream flow. We further allow $\mathbf{z}_t$ to be the PET rather than streamflow to avoid fitting negative values (which are impermissible under Gamma likelihood.)
+
+For simplicity, I fit a single model with $(k,p,q) = (2,2,2)$.
+
+We load the data below:
+```{r}
+data <- DKR::koksilah_PET
+train <- data[data$hydr_year < 30,]
+configs <- list(
+  k=2,p=2,q=2
+)
+xt <- train$rain
+zt <- train$PET
+yt <- train$gauge
+```
+
+The model is fitted as follows
+```{r, eval = FALSE}
+source(here::here("Gamma AR", "GARMA_DKR", "garma_dkr_main.R"))
+# get data
+set.seed(1928)
+garma_fit <- fit_DKR(
+  xt = xt,
+  zt = zt,
+  yt = yt,
+  configs = configs,
+  report = TRUE
+)
+saveRDS(garma_fit, here::here("Gamma AR", "koksilah_fit.RData"))
+```
+
+Which we have fitted ahead of time and load below:
+```{r}
+mod <- readRDS(here::here("Gamma AR", "koksilah_fit.RData"))
+```
+
+\newpage
+
+### 1. In-Sample (Training) Evaluation Metrics
+
+The table below presents performance metrics for each model fitted during training.
+These include log-likelihood, normalized Root Mean-Squared Error (NRMSE), RMSE, $R^2$, Nash-Sutcliffe Efficiency (NSE), and Kling-Gupta Efficiency (KGE).
+
+```{r, echo = FALSE}
+garma_fit <- mod
+loglik <- error(xt, zt, yt, params = mod$par, configs = mod$configs)
+configs <- mod$configs
+# -------------- #
+# -- Evaluate -- #
+# -------------- #
+p <- configs$p
+q <- configs$q
+preds <- garma_fit$mu_t
+# compute resids
+residuals <- yt[1:(length(yt)-1)]-preds[2:length(yt)]
+metrics_table <- kable(
+  cbind(loglik= loglik, DKR::eval_all(yt = yt[1:(length(yt)-1)], 
+              yt_hat = preds[2:length(yt)])),
+  # HTML for interactive viewing in RStudio and LaTeX when knitting
+  format = if (interactive())
+    "html"
+  else
+    "latex",
+  # number of digits for rounding
+  digits = 2,
+  # align columns in center
+  align = "c",
+  caption = "Summary of In-Sample Training Metrics",
+  escape = FALSE
+) %>%
+  kable_styling(
+    latex_options = c("hold_position", "scale_down", "booktabs"),
+    position = "center", 
+    full_width = FALSE
+  )
+metrics_table
+```
+
+\newpage
+
+### 2. Estimated Model Parameters
+
+We have the estimated kernel parameters:
+
+```{r, echo = FALSE}
+params <- mod$par
+kernel_params <- as.data.frame(matrix(
+  params[1:(4 * configs$k)],
+  nrow = configs$k,
+  ncol = 4,
+  byrow = TRUE
+))
+colnames(kernel_params) <- c("beta0", "beta1", "logdelta", "logsigma")
+kernel_params$delta <- exp(kernel_params$logdelta)
+kernel_params$sigma <- exp(kernel_params$logsigma)
+kable(
+data.frame(cbind(Kernel = c(1,2),  kernel_params %>% dplyr::select(-logdelta, -logsigma))),
+  format = if (interactive()) "html" else "latex",
+  digits = 2,
+ # align = "c",
+  col.names = c("Kernel", "$\\hat\\beta_0$", "$\\hat\\beta_1$", "$\\hat{\\delta}$", "$\\hat{\\sigma}$"),
+  caption = "Estimated Kernel Parameters",
+  escape = FALSE
+) %>%
+  kable_styling(
+    latex_options = c("hold_position", "scale_down", "booktabs"),
+    position = "center", 
+    full_width = FALSE
+  )
+```
+
+And the rest of the parameters:
+```{r, echo = FALSE}
+kable(
+  as.data.frame( t (params[-(1:(4 * configs$k))])),
+  format = if (interactive())
+    "html"
+  else
+    "latex",
+  digits = 4,
+  col.names = c(
+    "$\\hat\\phi_1$",
+    "$\\hat\\phi_2$",
+    "$\\hat\\theta_1$",
+    "$\\hat\\theta_2$",
+    "$\\hat\\alpha$"
+  ),
+  caption = "Estimated ARMA and Shape Parameters",
+  escape = FALSE
+) %>%
+  kable_styling(
+    latex_options = c("hold_position", "scale_down", "booktabs"),
+    position = "center", 
+    full_width = FALSE
+  )
+```
+\newpage
+
+### 3. Composition of $\mu_t$
+
+Here, we examine exactly how the Kernel Regression component $\tilde{y}_t$ and the ARMA error component $\tau_t$ contribute to a fitted $\mu_t$ in a one-step-ahead forecast style.
+
+```{r, echo=FALSE, message = FALSE, warning = FALSE}
+# ----------------- #
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+# prepare data
+df <- data.frame(
+  time = 365:730,
+  tau = garma_fit$tau_t[365:730],
+  ytilde = garma_fit$yt_tilde[365:730]
+) %>%
+  mutate(mu = tau + ytilde)
+
+# long format for tau and ytilde (for stacking)
+df_long <- df %>%
+  select(time, tau, ytilde) %>%
+  pivot_longer(cols = c(tau, ytilde),
+               names_to = "component",
+               values_to = "value") %>%
+  mutate(component = factor(component, levels = c("tau", "ytilde")))  
+# plot
+ggplot() +
+  geom_area(
+    data = df_long,
+    aes(x = time, y = value, fill = component),
+    position = "stack",
+    alpha = 0.5
+  ) +
+  geom_line(
+    data = df,
+    aes(x = time, y = mu),
+    color = "black",
+    size = 0.7
+  ) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  labs(
+    title = expression("Decomposition of " * mu[t] * " into " * tau[t] * " and " * tilde(y)[t]),
+    subtitle = "Year 2 of Training Data",
+    x = "Time",
+    y = "Value",
+    fill = "Component"
+  ) +
+  scale_fill_manual(values = c("red", "blue"),
+                    labels = c(expression(tau[t]), expression(tilde(y)[t]))) +
+  theme_bw() + theme(legend.position = "bottom")
+```
