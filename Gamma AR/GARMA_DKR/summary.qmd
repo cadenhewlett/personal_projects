@@ -1,0 +1,1071 @@
+---
+title: "State of the Project"
+format: revealjs
+---
+
+### Background {style="font-size:100%;"}
+
+::: {style="font-size:80%; line-height:1.2;"}
+<!-- 1st fragment -->
+- <span class="fragment">Originally, we had Sliding Window Regression (SWR)</span>
+
+<!-- 2nd fragment: equation -->
+<span class="fragment">
+$$
+y_t = \sum_{i=1}^k \beta_i \,(x * \kappa_i)[t] + \varepsilon_t, 
+\quad \varepsilon_t = \sum_{j = 1}^p\phi_j \varepsilon_{t-j} + u_t,
+\quad u_t \overset{\text{iid}}{\sim} \mathcal{N}(0, \sigma^2_{u})
+$$
+</span>
+
+<!-- 3rd fragment -->
+- <span class="fragment">Where $\kappa_i(\delta_i, \sigma_i)$ is a normally‑distributed lag kernel with mean $\delta_i$ and standard deviation $\sigma_i$.</span>
+
+<!-- 4th fragment -->
+- <span class="fragment">Further, $\varepsilon_t$ is a potentially autocorrelated error term of unknown order $p$, estimated ad hoc via the Cochrane‑Orcutt procedure.</span>
+:::
+
+---
+
+
+### Out-of-Sample Performance of SWR {style="font-size:100%;"}
+
+
+
+::: {style="font-size:80%; line-height:1.2;"}
+```{r table1, echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(knitr)
+library(kableExtra)
+library(tidyr)
+library(ggsci)
+df <- tribble(
+  ~Watershed,  ~k,   ~R2,  ~KGE, ~RMSE,
+      "Koksilah",   3,  0.71, 0.72,  3.36,
+       "Big Sur",   3,  0.60, 0.70,  2.74,
+      "Koksilah",   2,  0.59, 0.64,  2.67,
+       "Big Sur",   3,  0.47, 0.58,  1.50
+)
+
+df %>%
+  mutate(across(c(R2, KGE, RMSE), ~ format(round(., 2), nsmall = 2))) %>%
+  kable(
+    format = "html",
+    align = c("l", "c", "r", "r", "r"),
+    col.names = c("Watershed", "k", "R²", "KGE", "RMSE"),
+    escape = FALSE
+  ) %>%
+  add_header_above(c(" " = 2, "Metric" = 3)) %>%
+  group_rows("Original Data", 1, 2) %>%
+  group_rows("Transformed Data", 3, 4) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover", "condensed")
+  )
+```
+:::
+
+---
+
+### Upsides to SWR {style="font-size:100%;"}
+
+::: {style="font-size:80%; line-height:1.2;"}
+<!-- 1st fragment -->
+- <span class="fragment">Response $\mathbf{y}_t$ is purely a function of the covariate $\mathbf{x}_T$.</span>
+
+<!-- 2nd fragment: equation -->
+- <span class="fragment">Constant coefficients $\beta_i$ are easily-interpreted and naturally positive.</span>
+
+- <span class="fragment">Kernel parameters $(\delta_i, \sigma_i)$ are easily interpreted when $\kappa_i$ is Gaussian.  </span>
+<!-- 3rd fragment -->
+- <span class="fragment">Difference of fitted values (i.e. $\hat{y}_t - \phi \hat{y}_{t-1}$) is trivially linear in $\beta_i$. \newline This implies that the Cochrane-Orcutt procedure is easily justified.</span>
+- <span class="fragment">Allows weighted kernels to visualize relative importance of different flowpaths. </span>
+:::
+
+---
+
+
+
+### Downsides to SWR {style="font-size:100%;"}
+
+::: {style="font-size:80%; line-height:1.2;"}
+<!-- 1st fragment -->
+- <span class="fragment">Residual diagnostics are poor.</span>
+
+<!-- 2nd fragment: equation -->
+- <span class="fragment">Parameters do not change dynamically over the hydrologic year.</span>
+
+- <span class="fragment">Choice of Gaussian kernel is arbitrary, and causes confusion near lag zero due to integration across $i \pm \frac{1}{2}$ in computation of $\kappa_i$. </span>
+<!-- 3rd fragment -->
+- <span class="fragment"> Use of Cochrane-Orcutt procedure is ad hoc, and autoregressive errors are not accounted for in the modelling procedure. </span>
+- <span class="fragment"> OLS log-likelihood and error structure implies that $y_t$ is conditionally normal, i.e. $y_t \mid \underline{\mathbf{H}}_{t} \sim \mathcal{N}\big(\sum_{i = 1}^k \beta_i(x \ast \kappa_i)[t], \sigma^2_{u}\big)$. This permits negative values for near-zero fits which is not in-line with the natural system. </span>
+:::
+
+---
+
+
+### Introduction of DKR {style="font-size:100%;"}
+
+::: {style="font-size:80%; line-height:1.2;"}
+<!-- 1st fragment -->
+- <span class="fragment">In the work leading up to this summer, we established Dynamic Kernel Regression (DKR). It assumes that the *uncorrected* response $\tilde{y}_t$ takes the form:</span>
+
+<!-- 2nd fragment: equation -->
+<span class="fragment">
+$$
+{y}_t = \tilde{y}_t + \varepsilon_t =\sum_{i=1}^k \big( \beta_{0i} + \beta_{1i}(z \ast \kappa_i)[t] \big)\cdot(x * \kappa_i)[t]  + \varepsilon_t
+$$
+Where $\mathbf{z}_T$ is a modulating variable, allowing for dynamic weights.
+</span>
+
+<!-- 3rd fragment -->
+- <span class="fragment">In our versions of DKR, we modeled the AR process *alongside* the model, for a fixed hyperparameter order $p$, writing the error as: </span>
+
+<span class="fragment">
+$$u_t = \varepsilon_t - \sum_{j = 1}^p \phi_j \varepsilon_{t - j} = \left( y_t - \tilde{y}_t \right) - \sum_{j = 1}^p \phi_j \left( y_{t - j} - {\tilde{y}}_{t - j} \right)$$
+</span>
+:::
+---
+
+### Introduction of DKR (Continued) {style="font-size:100%;"}
+
+::: {style="font-size:80%; line-height:1.2;"}
+<!-- 1st fragment -->
+- <span class="fragment">Since it adjusts for the autoregressive error, the DKR model adopts the following 'complete' fitted value for $y_t$, which is often referred to as $\hat{y}_t$</span>
+
+<!-- 2nd fragment: equation -->
+<span class="fragment">
+$$
+{y}_t = \hat{y}_t + u_t =\tilde{y}_t + \sum_{j=1}^p \phi_j(y_{t-j} - \tilde{y}_{t-j}) + u_t
+$$
+Where $\tilde{y}_t$ is the kernel regression term and $u_t \sim \mathcal{N}(0, \sigma^2_u)$.
+</span>
+
+- <span class="fragment">
+The model fitting procedure and derivation of the log-likelihood are very similar to the original SWR work, utilizing least-squares. 
+</span>
+
+- <span class="fragment">
+However, we optimize with respect to the log-transformed parameters to allow for (nearly) unconstrained optimization.
+</span>
+:::
+---
+
+
+### Introduction of DKR (Continued, 2) {style="font-size:100%;"}
+
+::: {style="font-size:80%; line-height:1.2;"}
+<!-- 1st fragment -->
+- <span class="fragment">In addition, we allow the kernel $\kappa_i$ to be gamma distributed, with un-normalized density given by:</span>
+
+<!-- 2nd fragment: equation -->
+<span class="fragment">
+$$
+\kappa_i(\alpha, \theta) = \int_{i}^{i+1} \dfrac{1}{\Gamma(\alpha) \theta^{\, \alpha}}x^{\alpha-1}e^{-x/\theta} \;\text{d}x = \dfrac{1}{\Gamma(\alpha)}\Big( \Gamma(\alpha, i/\theta) - \Gamma(\alpha, (i + 1) / \theta )\Big)
+$$
+Where $\Gamma(x)$ is the Gamma function and $\Gamma(s, x)$ is the upper incomplete gamma function. The mean and variance are $\delta = \alpha \theta$ and $\sigma^2 = \alpha \theta^2$, respectively.
+</span>
+
+- <span class="fragment">
+The use of the Gamma kernel allows the model to be more in-line with existing hydrological theory and modelling practices such as Nash cascades.
+</span>
+:::
+---
+
+
+
+
+
+### Downsides to SWR: Recap {style="font-size:100%;"}
+
+::: {style="font-size:80%; line-height:1.2;"}
+<!-- 1st fragment -->
+- Residual diagnostics are poor.
+
+<!-- 2nd fragment: equation -->
+- Parameters do not change dynamically over the hydrologic year.
+
+
+- Choice of Gaussian kernel is arbitrary, and causes confusion near lag zero.
+
+<!-- 3rd fragment -->
+- Use of Cochrane-Orcutt procedure is ad hoc.
+
+
+- OLS log-likelihood and error structure implies that $y_t$ is conditionally normal.
+
+:::
+
+---
+
+
+
+
+### Downsides to SWR: Fixed by DKR {style="font-size:100%;"}
+
+::: {style="font-size:80%; line-height:1.2;"}
+<!-- 1st fragment -->
+- Residual diagnostics are poor.
+
+<!-- 2nd fragment: equation -->
+- <del>Parameters do not change dynamically over the hydrologic year.</del> ✅ Fixed!
+
+
+- <del>Choice of Gaussian kernel is arbitrary, and causes confusion near lag zero.</del> ✅Fixed!
+
+<!-- 3rd fragment -->
+- <del>Use of Cochrane-Orcutt procedure is ad hoc.</del> ✅ Fixed!
+
+
+- OLS log-likelihood and error structure implies that $y_t$ is conditionally normal.
+
+:::
+
+---
+
+### Performance of DKR {style="font-size:100%;"}
+
+::: {style="font-size:80%; line-height:1.2;"}
+Using the most recent version (Par's `V8`), we summarize the performance of DKR relative to SWR in the table below.
+
+The autoregressive estimation method chose $p = 2$. 
+```{r table2, echo = FALSE}
+df <- tribble(
+  ~Watershed,  ~k,   ~R2,  ~KGE, ~RMSE,
+      "Koksilah",   3,  0.71, 0.72,  3.36,
+       "Big Sur",   3,  0.60, 0.70,  2.74,
+      "Koksilah",   2,  0.8268079, 0.8838348,  2.658943
+)
+
+df %>%
+  mutate(across(c(R2, KGE, RMSE), ~ format(round(., 2), nsmall = 2))) %>%
+  kable(
+    format = "html",
+    align = c("l", "c", "r", "r", "r"),
+    col.names = c("Watershed", "k", "R²", "KGE", "RMSE"),
+    escape = FALSE
+  ) %>%
+  add_header_above(c(" " = 2, "Metric" = 3)) %>%
+  group_rows("SWR", 1, 2) %>%
+  group_rows("DKR", 3, 3) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover", "condensed")
+  )
+```
+:::
+---
+
+### Downsides to DKR {style="font-size:100%;"}
+
+::: {style="font-size:80%; line-height:1.2;"}
+
+- Residual diagnostics are poor.
+
+- <span class="fragment">Differences $y_t - \varphi y_{t-1}$ cannot be simplified in terms of transformation $\breve{a} = a_t - \varphi a_{t-1}$.</span>
+
+- <span class="fragment">Model both admits *and* fits negative values when $y_t \approx 0$.</span> 
+
+- OLS log-likelihood and error structure implies that $y_t$ is conditionally normal.
+
+- <span class="fragment">Kernel Parameters are difficult to interpret when $\delta$ is shape and $\sigma$ is scale (easily fixed in reporting.)</span>
+:::
+
+---
+
+### Residual Diagnostics: DKR
+
+::: {style="font-size:80%; line-height:1.2;"}
+
+Below are the scale-location and Q-Q plots for the first year of test set data in the DKR models fitted on the Koksilah and Big Sur watersheds, respectively. 
+
+```{r, echo = FALSE, message = FALSE}
+library(DKR)
+library(ggplot2)
+library(gridExtra)
+mod <- readRDS("C://Users//thetr//OneDrive//Desktop//DKR//DKR//versions//V8//mod_bigsur_v8.RData")
+test <- bigsur[bigsur$hydr_year >= 30, ]
+fits <- predict(mod, newdata = test)
+# format into data frame
+df_bs <- data.frame(
+  residual = test$gauge - fits$yt_hat,
+  fitted = fits$yt_hat
+)
+# compute standardized absolute residuals
+df_bs <- df_bs %>% mutate(abs_resid_sqrt = sqrt(abs(residual)) )
+# scale-location
+p1 <- ggplot(df_bs, aes(x = fitted, y = abs_resid_sqrt)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "loess", se = FALSE, color = "red", linewidth = 1) +
+  labs(
+    title = "Scale-Location Plot: Big Sur River DKR",
+    x = "Fitted Gauge",
+    y = expression(sqrt("|Residuals|"))
+  ) +
+  theme_bw()
+# Q-Q plot
+p2 <- ggplot(df_bs, aes(sample = residual)) +
+  stat_qq(alpha = 0.6) +
+  stat_qq_line(color = "red") +
+  labs(
+    title = "Big Sur River Normal Q-Q Plot",
+    x = "Theoretical Quantiles",
+    y = "Sample Quantiles"
+  ) +
+  theme_bw()
+grid.arrange(p1, p2, nrow = 1)
+```
+:::
+
+---
+
+### Nonlinearity in Differencing: DKR 
+
+::: {style="font-size:80%; line-height:1.2;"}
+
+<span class="fragment">When computing the temporal differences $y_t - \varphi y_{t-1}$ as included in the AR correction term in the DKR procedure, the dynamic weight term be simplified as a transformation $\breve{a} = a_t - \varphi a_{t-1}$.</span>
+
+<span class="fragment">Letting $Z_t = (z \ast \kappa^{(i)})[t]$ and $X_t = (x \ast \kappa^{(i)})[t]$,
+$$
+\begin{aligned}
+y_t - \varphi y_{t-1} &\propto  \sum_{i = 1}^k \beta_1^{(i)}( Z_tX_t  - \varphi Z_{t-1}X_{t-1}) \\
+&\propto  \sum_{i = 1}^k \beta_1^{(i)}\left( Z_t\big( X_t  - \varphi X_{t-1}\big) + \varphi X_{t-1}\big( Z_t - \varphi Z_{t-1}\big)\right) \\
+&\propto  \sum_{i = 1}^k \beta_1^{(i)}\Big(  \breve{x}_t(z \ast \kappa^{(i)})[t] + \varphi \breve{z}_t (x \ast \kappa^{(i)})[t-1]  \Big)
+\end{aligned}
+$$
+Which cannot simplify further.</span>
+:::
+
+---
+
+
+
+### A Generalized Kernel Regression Model {style="font-size:100%;"}
+
+::: {style="font-size:80%; line-height:1.2;"}
+Let $\mathbf{X}$ be an $(n+1) \times k$ data matrix, given by
+$$
+\mathbf{X} = \begin{bmatrix}x_{01} & x_{02} & \dots & {x}_{0k} \\
+                                             x_{11} & x_{12} & \dots & {x}_{1k} \\
+                                              \vdots & \vdots & \ddots & \vdots \\
+                                             x_{n1} & x_{n2} & \dots &x_{nk}\end{bmatrix} $$
+We use $0$-based indexing by convention (for the convolutions to follow). It can easily be assumed that $x_{0,:} = 0$. Denote $\mathbf{X}_{t}$ as the sub‑matrix consisting of rows $0, 1, \dots, t$ and all columns of $\mathbf{X}$ with $t \leq n$.
+:::
+
+---
+
+### GKR Kernel Matrix
+
+::: {style="font-size:80%; line-height:1.2;"}
+Define a kernel $\boldsymbol{\kappa}$  as a vector satisfying $\kappa_i \geq 0, \forall i \in [0, j]$ and $\sum_{i=0}^{j}\kappa_i = 1$, where $j = |\boldsymbol{\kappa}|$ is the length of the kernel. 
+
+Given kernels $\mathcal{K} = \{\boldsymbol{\kappa}^{(1)}, \boldsymbol{\kappa}^{(2)}, \dotsm, \boldsymbol{\kappa}^{(m)} \}$, set $\ell = \max \{ |{\kappa}_i|, i \in [1,m]\}$ and define the zero-padded kernels copies
+$$
+\tilde{\boldsymbol{\kappa}}^{(i)} = \begin{bmatrix} \boldsymbol{\kappa}^{(i)} \\
+\vec{\mathbf{0}}_{\ell - |\boldsymbol{\kappa}^{(i)}|}\end{bmatrix}
+\in\mathbb R^{\ell},\quad i=1,\dots,m.
+$$
+Where $\vec{\mathbf{0}}_n$ is a zero vector of length $n$.
+
+Stacking these transformed vectors yields the **kernel matrix**
+$$
+\mathbf{K} = \begin{bmatrix} \tilde{\boldsymbol{\kappa}}^{(1)} & \tilde{\boldsymbol{\kappa}}^{(2)} & \dots & \tilde{\boldsymbol{\kappa}}^{(m)}\end{bmatrix} \in \mathbb{R}^{\ell \times m}
+$$
+Whose $i$-th column is a kernel.
+:::
+---
+
+### Covariate-Wise Convolution
+
+::: {style="font-size:80%; line-height:1.2;"}
+Define $\mathbf{K}_t$ as the previously defined $\mathbf{K}$, except the padding length $\ell$ is fixed at $t \geq \ell$. Let $\mathbf{X}_t$
+
+Consequently, we define 
+$$
+{(\mathbf{X} \ast \mathbf{K})[t] = {\mathbf{1}}_t^{\top}\big( (\mathbf{P} \mathbf{X}_t ) \circ \mathbf{K}_t\big) }  \tag{1}
+$$
+Where $\mathbf{A} \circ \mathbf{B}$ is the Hadamard product of $\mathbf{A}$ and $\mathbf{B}$, and $\mathbf{P}_n$ is the $n \times n$ anti-identity matrix defined by
+$$
+p_{ij} = \begin{cases} 1 & i + j = n+1 \\
+0, &\text{otherwise}\end{cases}
+$$
+By construction, any fixed column $i$ of $(\mathbf{X} \ast \mathbf{K})[t]$ is the discrete  convolution of the $i$-th covariate of $\mathbf{X}$ with the $i$-th kernel in $\mathbf{K}$.
+:::
+---
+
+
+
+
+<!-- - <span class="fragment">Instead of being normal, instead assume that the conditional distribution of the response $y_t$ follows an exponential family distribution with natural parameter $\vartheta_t$, conditional mean $\mu_t = \mathbb{E}[y_t \mid \mathcal{F}_{t}] = b^{\prime}(\vartheta_t)$ and variance $\text{var}(y_t \mid \mathcal{F}_{t}) = b^{\prime\prime}(\vartheta_t)$, where $\mathcal{F}_t = \sigma(\mathbf{x}_t, \dots \mathbf{x}_1,  y_{t-1}, \dots y_1, \mu_t, \dots \mu_1)$ denotes the information available up to time $t$.</span> -->
+
+<!-- - $(\mathbf{v} \ast \mathbf{w})[n] = \sum_{i = 0}^t v_{n-i} w_{i}$ -->
+
+
+### Mean Term: Regression Component
+
+::: {style="font-size:70%; line-height:1.2;"}
+Let $\boldsymbol{\beta} = \begin{pmatrix} \beta_1 & \beta_2 & \dots & \beta_k \end{pmatrix}^{\top} \subseteq \mathbb{R}^k$. We model the mean $\mu_t$ of $y_t$ as
+$$
+g(\mu_t) = \eta_t  = (\mathbf{X} \ast \mathbf{K})[t]\,\boldsymbol{\beta} + \tau_t \tag{2}
+$$
+Where $g(\cdot)$ is a link function, and $\tau_t$ is an additional component that allows ARMA terms to be included additively in the predictor. The general form of $\tau_t$ is given by
+
+$$
+\tau_t = \sum_{j=1}^p \phi_j \mathcal{A}(y_{t-j}, \mathbf{X}_{t-j}, \mathbf{K}_{t-j}, \boldsymbol{\beta}) + \sum_{j=1}^q \theta_j \mathcal{M}(y_{t-j}, \mu_{t-j}) \tag{3}
+$$
+
+Where $\mathcal{A}$ and $\mathcal{M}$ are functions representing the AR and MA terms respectively, with parameters $\boldsymbol{\phi}^{\top} = \langle \phi_1, \dots, \phi_p\rangle$ and $\boldsymbol{\theta}^{\top} = \langle \theta_1, \dots, \theta_q\rangle$.
+:::
+---
+
+
+### Mean Term: ARMA Component
+
+::: {style="font-size:80%; line-height:1.2;"}
+ The general form of $\tau_t$ presented earlier is too general for a practical application. Instead, following the work of Benjamin et. al (2003), we use the predictor scale residuals to define $\mathcal{M}$ and regression differencing to define $\mathcal{A}$, i.e.
+ 
+$$
+g(\mu_t) = \eta_t = (\mathbf{X} \ast \mathbf{K})[t]\boldsymbol{\beta} + \sum_{j=1}^p \phi_j \big( g(y_{t-j}) - \boldsymbol{\beta}(\mathbf{X} \ast \mathbf{K})[t-j] \big) + \sum_{j=1}^q \theta_j \big( g(y_{t-j}) - \eta_j\big) \tag{4}
+$$
+Notice, of course, that the choice of predictor-scale residuals for $\mathcal{A}$ and $\mathcal{M}$ is arbitrary. The order $p, q$ of the ARMA process is a hyper-parameter, and the parameters $\boldsymbol{\phi}$ and $\boldsymbol{\theta}$ are estimated alongside the regression parameters $\boldsymbol{\beta}$.
+:::
+---
+
+### Some Proofs Regarding Equations 1 and 2
+
+::: {style="font-size:70%; line-height:1.2;"}
+Recall Equation $1$ and Equation $3$:
+$$
+\underbrace{\eta_t  = (\mathbf{X} \ast \mathbf{K})[t]\,\boldsymbol{\beta} + \tau_t}_{\text{Equation 2}}, \text{ where } \underbrace{(\mathbf{X} \ast \mathbf{K})[t] = {\mathbf{1}}_t^{\top}\big( (\mathbf{P} \mathbf{X}_t ) \circ \mathbf{K}_t\big) }_{\text{Equation 1}}  
+$$
+In the slides to follow, I prove the following (in order):
+
+- <span class="fragment">
+When $k = 1$, Equation 1 is a discrete convolution of $\boldsymbol{x}$ and $\tilde{\boldsymbol{\kappa}}$.
+</span>
+
+- <span class="fragment">
+When $\mathbf{X} = \begin{bmatrix} \boldsymbol{x} & \boldsymbol{x} & \dots &\boldsymbol{x} \end{bmatrix}$ and $\tau_t = \varepsilon_t$ (uncorrelated error), Equation 2 decomposes into the $\hat{y}_t$ of SWR.
+</span>
+
+- <span class="fragment">
+For a certain configuration of $\mathbf{K}$, $\mathbf{X}$, $\mathcal{A}$ and $\mathcal{M}$, the general form of Equation 2 decomposes into the OLS GLM mean equation.
+</span>
+:::
+---
+
+
+::: {style="font-size:60%; line-height:1.0;"}
+<b>Proof 1</b>. When $k = 1$, Equation 1 decomposes into a discrete convolution of $\boldsymbol{x}$ and $\boldsymbol{\kappa}$. 
+*Proof.* \vspace{-0.5cm}
+$$
+\begin{aligned}
+(\mathbf{X} \ast \mathbf{K})[t] &=  \mathbf{1}_t^{\top} \left( \left( \begin{bmatrix} 0  & 0 & \dots & 0& 1 \\ 0  & 0 & \dots & 1& 0 \\ 
+\vdots & \vdots &  {{\scriptstyle\cdot^{\scriptstyle\cdot^{\scriptstyle\cdot}}}}
+ & \vdots & \vdots \\ 1 & 0 & 0 & \dots &0\end{bmatrix} \begin{bmatrix} x_0 \\ x_1 \\ \vdots \\ x_t \end{bmatrix} \right)\circ\begin{bmatrix} \kappa_0 \\ \kappa_1 \\ \vdots \\ \kappa_{t} \end{bmatrix} \right) \\
+ &=  \mathbf{1}_t^{\top} \left(  \begin{bmatrix} x_t \\ x_{t-1} \\ \vdots \\ x_0 \end{bmatrix} \circ\begin{bmatrix} \kappa_0 \\ \kappa_1 \\ \vdots \\ \kappa_t \end{bmatrix} \right) \\
+  &=  \begin{bmatrix} 1 & 1& \dots & 1 \end{bmatrix}\begin{bmatrix} x_t \kappa_0 \\ x_{t-1} \kappa_1 \\ \vdots \\ x_0 \kappa_t\end{bmatrix} \\
+    &=  \sum_{i = 0}^t x_{t-i} \kappa_{i} \hspace{0.5cm}\square
+\end{aligned}
+$$
+:::
+---
+
+
+::: {style="font-size:55%; line-height:1.0;"}
+<b>Proof 2</b>. Let $\mathbf{X} = \begin{bmatrix} \boldsymbol{x} & \boldsymbol{x} & \dots &\boldsymbol{x} \end{bmatrix}$ and $\tau_t = \varepsilon_t$ (for uncorrelated error $\varepsilon_t$), Equation 2 decomposes into the SWR Equation 3.
+*Proof.* \vspace{-0.5cm}
+$$
+\begin{aligned}
+(\mathbf{X} \ast \mathbf{K})[t]\boldsymbol{\beta} + \tau_t  &=  \left( {\mathbf{1}}_t^{\top}\big( (\mathbf{P} \mathbf{X}_t ) \circ \mathbf{K}_t\big)  \right)\boldsymbol{\beta}  + \tau_t \\
+ &= \left( \mathbf{1}_t^{\top} \left( \left( \begin{bmatrix} 0  & 0 & \dots & 0& 1 \\ 0  & 0 & \dots & 1& 0 \\ 
+\vdots & \vdots &  {{\scriptstyle\cdot^{\scriptstyle\cdot^{\scriptstyle\cdot}}}}
+ & \vdots & \vdots \\ 1 & 0 & 0 & \dots &0\end{bmatrix} \begin{bmatrix} x_0 & x_0 & \dots & x_0\\ x_1 &x_1 & \dots & x_1 \\ \vdots & \vdots & \ddots & \vdots \\ x_t & x_t & \dots & x_t\end{bmatrix} \right)\circ\begin{bmatrix} \kappa_0^{(1)} &\kappa_0^{(2)} & \dots &\kappa_0^{(k)}\\ \kappa_1^{(1)} &\kappa_1^{(2)} & \dots &\kappa_1^{(k)} \\ \vdots & \vdots & \ddots & \vdots \\ \kappa_t^{(1)} &\kappa_t^{(2)} & \dots &\kappa_t^{(k)} \end{bmatrix} \right)   \right)\boldsymbol{\beta}  + \varepsilon_t \\
+ &=  \left( \mathbf{1}_t^{\top} \left( \begin{bmatrix} x_t \kappa_0^{(1)} & x_t \kappa_0^{(2)} & \dots & x_t \kappa_0^{(k)}\\ x_{t-1}\kappa_1^{(1)} &x_{t-1}\kappa_1^{(2)} & \dots &x_{t-1}\kappa_1^{(k)} \\ \vdots & \vdots & \ddots & \vdots \\ x_0\kappa_t^{(1)} & x_0\kappa_t^{(2)} & \dots &x_0\kappa_t^{(k)} \end{bmatrix} \right)   \right) \begin{bmatrix} \beta_1 \\ \beta_2 \\ \vdots \\ \beta_k \end{bmatrix}  + \varepsilon_t\\
+  &=  \left(  \begin{bmatrix} \sum_{i=0}^t  x_{t-i} \kappa^{(1)}_{i}  & \sum_{i=0}^t  x_{t-i} \kappa^{(1)}_{i} & \dots & \sum_{i=0}^t  x_{t-i} \kappa^{(k)}_{i} \end{bmatrix}    \right)\begin{bmatrix} \beta_1 \\ \beta_2 \\ \vdots \\ \beta_k \end{bmatrix}  + \varepsilon_t \\
+  &= \sum_{i=1}^k \beta_i \cdot (\boldsymbol{x} \ast \boldsymbol{\kappa}^{(i)})[t] + \varepsilon_t \hspace{0.5cm} \square
+\end{aligned}
+$$
+:::
+---
+
+::: {style="font-size:65%; line-height:1.0;"}
+<b>Proof 3</b>. Let $\mathbf{X} = \begin{bmatrix} \mathbf{1}_t & \mathbf{X}_t \end{bmatrix}$, i.e. allowing $\mathbf{x}_0 = \mathbf{1}$. Let $\mathcal{A}(\dots) = \mathcal{M}(\dots) = 0$, consequently $\tau_t = 0$. Define $\mathbf{\kappa} = \begin{bmatrix}1\end{bmatrix}$, thus $\tilde{\mathbf{\kappa}} =  \begin{bmatrix}  1 &\vec{\mathbf{0}}_{t - 1} \end{bmatrix}^{\top}$. From this, we define $\mathbf{K}_t$  as follows:
+$$
+\mathbf{K}_{t} =\begin{bmatrix} \tilde{\mathbf{\kappa}} & \tilde{\mathbf{\kappa}} & \dots &\tilde{\mathbf{\kappa}}\end{bmatrix} = \begin{bmatrix} 1 & 1 & \dots & 1 \\ 0 & 0 & \dots & 0 \\ 0 & 0 & \dots & 0 \\ \vdots & \vdots & \ddots & \vdots \\ 0 & 0 & \dots & 0 \end{bmatrix}
+$$
+Note that both $\mathbf{X}$ and $\mathbf{K}$ are $t \times (k+1)$ under this construction. Thus $\boldsymbol{\beta} \in \mathbb{R}^{(k+1)}$. With this definition of $\mathbf{X}$ and $\mathbf{K}$, we evaluate Equation 2
+
+(Continued...)
+:::
+---
+
+::: {style="font-size:55%; line-height:1.0;"}
+Using the previous definitions, we evaluate Equation $2$
+$$
+\begin{aligned}
+(\mathbf{X} \ast \mathbf{K})[t]\boldsymbol{\beta} + \tau_t  &=  \left( {\mathbf{1}}_t^{\top}\big( (\mathbf{P} \mathbf{X}_t ) \circ \mathbf{K}_t\big)  \right)\boldsymbol{\beta}  + 0 \\
+ &= \left( \mathbf{1}_t^{\top} \left( \left( \begin{bmatrix} 0  & 0 & \dots & 0& 1 \\ 0  & 0 & \dots & 1& 0 \\ 
+\vdots & \vdots &  {{\scriptstyle\cdot^{\scriptstyle\cdot^{\scriptstyle\cdot}}}}
+ & \vdots & \vdots \\ 1 & 0 & 0 & \dots &0\end{bmatrix} \begin{bmatrix} 1 & x_{1}^{(1)} & \dots & {x}_{1}^{(k)} \\ 1 & x_{2}^{(1)} & \dots & {x}_{2}^{(k)}  \\ \vdots & \vdots & \ddots & \vdots\\ 1 & x_{t}^{(1)}& \dots & x_{t}^{(k)} \end{bmatrix} \right)\circ\begin{bmatrix} 1 & 1 & \dots &1\\ 0 &0 & \dots &0 \\ \vdots & \vdots & \ddots & \vdots \\ 0 &0 & \dots &0 \end{bmatrix} \right)   \right)\boldsymbol{\beta}   \\
+ &= \left( \begin{bmatrix} 1 & 1 & \dots &1 \end{bmatrix} \begin{bmatrix} 1 & x_{t}^{(1)} & \dots & {x}_{t}^{(k)}\\ 0 &0 & \dots &0 \\ \vdots & \vdots & \ddots & \vdots \\ 0 &0 & \dots &0 \end{bmatrix}   \right)\begin{bmatrix} \beta_1 \\ \beta_2 \\ \vdots \\ \beta_{k+1} \end{bmatrix} \\ \\
+&=  \begin{bmatrix} 1 & x_{t}^{(1)} & \dots & {x}_{t}^{(k)} \end{bmatrix}   \begin{bmatrix} \beta_1 \\ \beta_2 \\ \vdots \\ \beta_{k+1} \end{bmatrix}  \\
+&= \beta_1 + \sum_{i = 1}^{k} x_t^{(i)} \beta_{i +1} \equiv \mathbf{x}_t^{\top} \boldsymbol{\beta} \hspace{0.75cm} \square
+\end{aligned}
+$$
+:::
+---
+
+### Log-Likelihood Expression 
+
+::: {style="font-size:65%; line-height:1.2;"}
+Here, we introduce the conditional distribution of the response $y_t$ in terms of the shape $\alpha$ and $\mu_t$.
+$$
+f(y_t \mid \mathcal{F}_t) = \frac{1}{\Gamma(\alpha)}\Big( \frac{\alpha}{\mu_t} \Big)^{\alpha}y_{t}^{\alpha-1} \exp\Big(-\frac{\alpha y_t}{\mu_t}\Big)
+$$
+Where $\mathcal{F}_t = \{\mathbf{x}_1, \dots \mathbf{x}_t ; \mu_1 \dots \mu_t; y_1 \dots y_{t-1}\}$.
+
+The log-likelihood is derived from the above as
+$$
+\begin{aligned}
+\ell(y_{1}, \dots y_t \mid \mathcal{F}_t)  &= \sum_{t = \ell+1}^{n}\log f( y_t \mid \mathcal{F}_t ) \\
+&= \sum_{t = \ell+1}^{n}\log \Big( \frac{1}{\Gamma(\alpha)}\Big( \frac{\alpha}{\mu_t} \Big)^{\alpha}y_{t}^{\alpha-1} \exp\Big(-\frac{\alpha y_t}{\mu_t}\Big)\Big) \\
+&= \boxed{\sum_{t = \ell+1}^{n}\Bigg\{\alpha\Big[ \log(\alpha) + \log(y_t) - \log(\mu_t)\Big] - \log(y_t) - \log\big(\Gamma(\alpha)\big) - \frac{\alpha y_t}{\mu_t} \Bigg\}}
+\end{aligned}
+$$
+Which we use in our optimization procedure. 
+:::
+---
+
+### Shape Parameter
+::: {style="font-size:70%; line-height:1.2;"}
+Rather than include it in our estimation procedure, we follow the equation used by McCullagh and Nelder ([source](https://doi.org/10.1201/9780203753736): Equation 8.3) in the estimation of the shape parameter $\alpha$,  given $y_t$ and $\mu_t$.
+
+Specifically, $\hat{\alpha} = 1/\hat{\sigma}^2$, where $\hat{\sigma}^2$ is given in our nomenclature as
+$$
+\hat{\sigma}^2 = \sum_{t = \ell + 1}^n \left( \frac{y_t - \hat{\mu}_t}{\hat{\mu}_t} \right)^2 \Big/ (n - \ell - p)
+$$
+Hence, the estimate of shape is
+$$
+\hat{\alpha} = \frac{n - \ell - p}{ \sum_{t=\ell  + 1}^n \big( {(y_t - \hat{\mu}_t)}/{\hat{\mu}_t} \big)^2  } \tag{4}
+$$
+Which are the standardized Pearson residuals moment estimator.
+:::
+---
+
+### A First GKR Fit
+
+::: {style="font-size:60%; line-height:1.2;"}
+For our first exploratory fit of the GKR model on our experimental data, I used the first $5$ years of the Koksilah River watershed. Letting $\mathbf{x}_T$ be the rainfall and $\mathbf{z}_T$ be the potential evapo-transpiration (PET), I tested $\mathbf{X} = \begin{bmatrix} \mathbf{x}_T &(\mathbf{x}_T\cdot\mathbf{z}_T) \end{bmatrix}$. A preview of the response variables is given below:
+
+```{r exp1, echo = FALSE, message = FALSE}
+library(ggplot2)
+library(tidyr)
+source(here::here("Gamma AR", "GARMA_DKR", "garma_dkr_main.R"))
+# ------------------- #
+# -- PET Transform -- #
+# ------------------- #
+# info on koksilah river from google maps
+lat <- 48.75603116961046
+long <-  -123.6820397210659
+data <- DKR::koksilah
+# configure dates
+start_date <- as.Date("01-10-1988", format = "%d-%m-%Y")
+days_offset <- seq_along(data$hydr_year) - 1
+calendar_date <- start_date + days_offset
+# compute transform and append
+data$PET <- temp_to_PET(data$temp, calendar_date, lat, long)$eq3
+# -------------------- #
+# ----- Training ----- #
+# -------------------- #
+# configure wrt to our example
+train <- data[data$hydr_year < 6, ]
+# data matrix
+xt <- matrix(
+  data = c(
+    train$rain , train$rain*train$PET # train$rain*train$PET,
+  ), ncol = 2, byrow = FALSE
+)
+yt <- train$gauge
+# assume xt is already defined
+df <- as.data.frame(xt[100:200, ])
+names(df) <- c("Rainfall", "Rainfall*PET")  # rename cols for clarity
+df$index <- seq_len(nrow(df))
+# pivot to long format, keeping only rain and rainPET
+df_long <- pivot_longer(
+  df,
+  cols = c(Rainfall, `Rainfall*PET`),
+  names_to = "variable",
+  values_to = "value"
+)
+# plot
+ggplot(df_long, aes(x = index, y = value)) +
+  geom_line() +
+  facet_wrap(~ variable, ncol = 2, scales = "fixed") +
+  labs(
+    title    = "Koksilah River Experiment: Explanatory Variables",
+    subtitle = "Preview using Observations 100 to 200",
+    x        = "Time",
+    y        = "Value"
+  ) +
+  theme_bw(base_size = 14) +
+  theme(
+    plot.title   = element_text(face = "bold", size = 16),
+    plot.subtitle= element_text(size = 12),
+    strip.text   = element_text(face = "bold")
+  )
+```
+:::
+---
+
+### A First GKR Fit (continued)
+
+::: {style="font-size:80%; line-height:1.2;"}
+In addition to the explanatory variables, I define $\mathbf{K} = \begin{bmatrix} \tilde{\boldsymbol{\kappa}}^{(1)} &  \tilde{\boldsymbol{\kappa}}^{(2)} & \tilde{\boldsymbol{\kappa}}^{(3)}\end{bmatrix}$, with $\tilde{\boldsymbol{\kappa}}^{(i)} = \begin{bmatrix} \boldsymbol{\kappa}^{(i)} & \vec{\mathbf{0}}_{\ell - |\boldsymbol{\kappa}^{(i)}|}\end{bmatrix}^{\top}$. Each $\boldsymbol{\kappa}^{(i)}$ is Gamma-distributed, with each element $\kappa_i \in \boldsymbol{\kappa}^{(i)}$ defined as
+$$
+\kappa_i = \int_{i}^{i+1} \dfrac{1}{\Gamma(\alpha) \theta^{\, \alpha}}x^{\alpha-1}e^{-x/\theta} \;\text{d}x = \dfrac{1}{\Gamma(\alpha)}\Big( \Gamma(\alpha, i/\theta) - \Gamma(\alpha, (i + 1) / \theta )\Big)
+$$
+In addition, I defined $$\mathcal{A}(y_{t-j}, \mathbf{X}_{t-j}, \mathbf{K}_{t-j}, \boldsymbol{\beta}) =  g(y_{t-j}) - \boldsymbol{\beta}(\mathbf{X} \ast \mathbf{K})[t-j]$$  $$\mathcal{M}(y_{t-j}, \mu_{t-j}) = g(y_{t-j}) - g(\mu_{t-j}) = g(y_{t-j}) - \eta_{t-j}$$ For link function $g(u) = u$.  The ARMA order I tested was $(p, q) = (1, 1)$.
+:::
+---
+
+### Results: Fitted Parameters (Kernels)
+::: {style="font-size:80%; line-height:1.2;"}
+Below, I include the fitted parameters across the different fitted kernels. 
+```{r, echo = FALSE}
+fit <- readRDS(here::here("Gamma AR", "koksilah_fit.RData"))
+configs <- fit$configs
+kernels <- as.data.frame(matrix(
+    fit$par[1:(3*configs$k)],
+    configs$k,
+    ncol = 3,
+    byrow = TRUE
+  ))
+colnames(kernels) <- c("beta", "logdelta", "logsigma")
+# extract kernel info
+kernel_params <- data.frame(
+  ID    = c(1, 2),
+  Variable = c("x", "xz"),
+  Shape = exp(kernels[, "logdelta"]),
+  Scale = exp(kernels[, "logsigma"]),
+  Delta = exp(kernels[, "logdelta"])*exp(kernels[, "logsigma"]),
+  Sigma = sqrt(exp(kernels[,"logdelta"]) * exp(kernels[,"logsigma"])^2)
+)
+# table for everything
+kable(
+  cbind(Beta = kernels[, "beta"], kernel_params) %>% arrange(Delta) %>% select (Variable, Delta, Sigma, Beta),
+    caption = "Coefficient Estimates: First 5 Years of Koksilah Data",
+  col.names =  c("Variable", "$\\hat{\\delta}$", "$\\hat{\\sigma}$", "$\\hat{\\beta}$"),
+  digits = 2,
+  escape = FALSE
+)
+```
+I noticed that the kernel parameters themselves are rather small. Across multiple testing combinations, it seems that the kernels terms are being driven to zero in favour of ARMA terms. I address this in the next experiment.
+:::
+---
+
+### Results: Kernel Plots
+
+::: {style="font-size:80%; line-height:1.2;"}
+Below I include the estimated kernel plots for this model, noting that $K_1$ denotes the kernel with $\mathbf{x}$ as the explanatory variable, while $K_2$ uses $\mathbf{x} \cdot \mathbf{z}$.
+```{r, ehco = FALSE}
+# build relevant kernels
+built_kernels <- apply(kernels, MARGIN = 1, function(row) {
+  build_kernel(
+    logdelta = row["logdelta"],
+    logsigma = row["logsigma"],
+    type = configs$kernel_type[1]
+  )
+})
+ell <- max(sapply(built_kernels, length))
+kernel_df <- as.data.frame(sapply(built_kernels, function(x) {
+  c(x, rep(0, ell - length(x)))
+}))
+colnames(kernel_df) <- paste0("K", 1:ncol(kernel_df))
+kernel_df$idx <- seq_len(nrow(kernel_df))  - 1      # x‑axis index
+kernel_long <- pivot_longer(kernel_df,
+                            cols = c(K1, K2),
+                            names_to = "Kernel",
+                            values_to = "Value")
+
+ggplot(kernel_long, aes(idx, Value, colour = Kernel)) +
+  geom_line(linewidth = 0.5) +
+  geom_point(size = 0.75) +
+  labs(x = "Index", y = "Value", colour = "Kernel",
+       title = "Kernel Plots: Koksilah River") +
+  theme_bw() + scale_color_d3("category10")
+```
+:::
+---
+
+### Results: Fitted Parameters (ARMA, Shape)
+::: {style="font-size:80%; line-height:1.2;"}
+Below we have the estimated AR coefficient, MA coefficient and Shape.
+```{r, echo = FALSE}
+pars <- c(fit$par[(3*configs$k + 1):length(fit$par)], fit$alpha_hat)
+# table for everything
+kable(
+  data.frame(t(pars)),
+  caption = "Non-Kernel Coefficient Estimates",
+  col.names =  c("$\\hat{\\phi}$", "$\\hat{\\theta}$", "$\\hat{\\alpha}$"),
+  digits = 2,
+  escape = FALSE
+)
+```
+As per the comment on the previous slide, the $\phi$ coefficient is hitting the uppermost boundary. We will see that from this, although the fitting metrics ($R^2$, KGE, etc.) are solid, the error structure isn't quite where we want it yet.
+:::
+---
+
+### Residual Diagnostics
+
+::: {style="font-size:70%; line-height:1.2;"}
+I briefly discussed Pearson Residuals when discussing the method-of-moments estimation of $\hat{\alpha}$ (or dispersion $\hat{\varphi}$).
+
+The $i$-th Pearson Residual $r^{\,\text{P}}_i$ is defined for the Gamma GLM as
+$$
+r^{\,\text{P}}_i = \dfrac{y_i - \hat{\mu}_i}{\sqrt{\hat{\varphi}V(\hat{\mu}_i)}} = \dfrac{\sqrt{\hat{\alpha}} (y_i - \hat{\mu}_i)}{\hat{\mu}_i}
+$$
+Where $V(\cdot)$ is the variance function of the response under the gamma model. 
+
+There is a test statistic associated with such a residual. Indeed, the Scaled Pearson Statistic is given by
+$$
+F_{\,\text{P}} = \frac{1}{n-p}\sum_{i = 1}^n (r^{\,\text{P}}_i )^2 \sim F_{(n-p), \infty}
+$$
+Further, the $i$-th Deviance Residual is denoted by
+$$
+r_i^{\,\text{D}} = \text{sign}(y_i - \hat{\mu}_i) \cdot\sqrt{d(y_i, \hat{\mu}_i)}
+$$
+Where $d(\dots)$ is the unit deviance and $\text{sign}(x) = 1$ if $x > 0$, $0$ if $x = 0$ and $-1$ otherwise. We explore these further in the next slide.
+:::
+---
+
+### Deviance: Derivation
+
+::: {style="font-size:70%; line-height:1.2;"}
+By definition, the dispersion-scaled unit deviance $d(\cdots)$ is given by the following.
+$$
+\begin{aligned}
+d(y_i, \hat{\mu}_i) &= 2 \big\{ \ell(y_t;y_t) - \ell(y_t; \hat{\mu}_t)\big\} \\
+&= 2 \Big\{ \alpha\Big[ \log(\alpha) + \log(y_t) - \log(y_t)\Big] - \log(y_t) - \log\big(\Gamma(\alpha)\big) - \frac{\alpha y_t}{y_t}   \\ &\hspace{0.75cm}- \alpha\Big[ \log(\alpha) + \log(y_t) - \log(\mu_t)\Big] - \log(y_t) - \log\big(\Gamma(\alpha)\big) - \frac{\alpha y_t}{\mu_t} \Big\} \\ 
+&= 2 \Big\{ -\log(y_t) - \alpha - \big(  \alpha \log(y_t) - \alpha \log(\mu_t) - \log(y_t) - \frac{\alpha y_t}{\mu_t} \big) \Big\} \\
+&= 2 \Big\{ \frac{ y_t - \mu_t}{\mu_t} - \log\big( \frac{y_t}{\mu_t} \big) \Big\}
+\end{aligned}
+$$
+Further, the scaled total deviance (i.e. including $\alpha$) tends to a Chi-Square distribution. Specifically, since we estimate $\hat{\alpha}$, 
+$$
+F_{\,\text{D}} =  \frac{\hat{\alpha}}{(n-p)}\sum_{i = 1}^n d(y_i, \hat{\mu}_i)  \sim F_{(n-p), \infty}
+$$
+:::
+---
+
+#### Pearson Residual Plot
+
+::: {style="font-size:50%; line-height:1.2;"}
+Below I plot the Pearson Residuals, with lines indicating the approximate theoretical limits under the asymptotic normal distribution. The red line covers the region $[-3, 3]$ and the orange line covers the region $[-2, 2]$.
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+ell      <- max(configs$p, configs$q)
+y_obs    <- yt[(ell+1):length(yt)]
+mu_pred  <- fit$mu_t[(ell+1):length(fit$mu_t)]
+alpha    <- fit$alpha_hat
+n        <- length(y_obs)
+p        <- length(fit$par) + 1
+
+# pearson residuals
+pearson  <- sqrt(alpha) * (y_obs - mu_pred) / mu_pred
+# FP and p‐value
+FP      <- alpha * sum(pearson^2) / (n - p)
+p_value  <- 1 - pf(FP, df1 = n - p, df2 = Inf)
+
+results <- list(
+  FP       = FP,
+  df       = n - p,
+  p_value  = p_value,
+  region   = qf(c(0.025, 0.975), df1 = n-p, df2 = Inf)
+)
+
+# example in R
+thresh1 <- 2
+thresh2 <- 3
+
+# build a data.frame
+df <- data.frame(
+  mu_pred = mu_pred,
+  pearson = pearson
+)
+
+# compute colours
+df$col <- ifelse(abs(df$pearson) > thresh2, "red",
+                 ifelse(abs(df$pearson) > thresh1, "orange", "black"))
+
+# ggplot
+p1 <- ggplot(df, aes(x = mu_pred, y = pearson, color = col)) +
+  geom_point(alpha = 0.5) +
+  scale_color_identity() +
+  geom_hline(yintercept = c(-thresh1, thresh1),
+             color = "orange", linetype = "dashed") +
+    geom_hline(yintercept = 0,
+             color = "black", linetype = "dashed") +
+  geom_hline(yintercept = c(-thresh2, thresh2),
+             color = "red",    linetype = "dashed") +
+  labs(
+    title = "Pearson Residuals vs. Fitted Mean (Train)",
+    x     = expression(hat(mu)),
+    y     = "Pearson Residuals"
+  ) +
+  theme_bw()
+p2 <- ggplot(df, aes(sample = pearson)) +
+  stat_qq(alpha = 0.6) +
+  stat_qq_line(color = "red") +
+  labs(
+    title = "QQ-plot of Pearson Residuals (Train)",
+    x     = "Theoretical Quantiles",
+    y     = "Sample Quantiles"
+  ) +
+  theme_bw()
+
+grid.arrange(p1, p2, ncol = 2)
+```
+So, while the residual performance is not *quite* where we want it, it's a massive improvement to the previous DKR metrics. The right tail is still far too heavy.
+:::
+---
+
+#### Deviance Residuals
+
+::: {style="font-size:50%; line-height:1.2;"}
+Below I plot the Deviance Residuals, with the same bounds as before. 
+```{r,echo = FALSE}
+# 2 \Big\{ \frac{ y_t - \mu_t}{\mu_t} - \log\big( \frac{y_t}{\mu_t} \big) \Big\}
+unit_dev <- 2 * ( (y_obs - mu_pred)/mu_pred - log(y_obs/mu_pred) )
+dev_resd <- sign(y_obs - mu_pred)*sqrt(unit_dev)
+# build a data.frame
+df <- data.frame(
+  mu_pred = mu_pred,
+  dev_resd = dev_resd
+)
+
+# compute colours
+df$col <- ifelse(abs(df$dev_resd) > thresh2, "blue",
+                 ifelse(abs(df$dev_resd) > thresh1, "cornflowerblue", "black"))
+
+# ggplot
+p1 <- ggplot(df, aes(x = mu_pred, y = dev_resd, color = col)) +
+  geom_point(alpha = 0.5) +
+  scale_color_identity() +
+  geom_hline(yintercept = c(-thresh1, thresh1),
+             color = "cornflowerblue", linetype = "dashed") +
+    geom_hline(yintercept = 0,
+             color = "black", linetype = "dashed") +
+  geom_hline(yintercept = c(-thresh2, thresh2),
+             color = "blue",    linetype = "dashed") +
+  labs(
+    title = "Deviance Residuals vs. Fitted Mean (Train)",
+    x     = expression(hat(mu)),
+    y     = "Deviance Residuals"
+  ) +
+  theme_bw()
+p2 <- ggplot(df, aes(sample = dev_resd)) +
+  stat_qq(alpha = 0.6) +
+  stat_qq_line(color = "blue") +
+  ylim(-2, 3) +
+  labs(
+    title = "QQ-plot of Deviance Residuals (Train)",
+    x     = "Theoretical Quantiles",
+    y     = "Sample Quantiles"
+  ) +
+  theme_bw()
+
+grid.arrange(p1, p2, ncol = 2)
+```
+We see that the Deviance Residuals are much more tamed, but have a heavier left tail in the QQ plot. 
+:::
+---
+
+### Predictive Performance Metrics
+
+::: {style="font-size:60%; line-height:1.2;"}
+Despite these issues in the residual plots, we see that the predictive performance metrics are very strong for this model. Since I used only 5 years of training data, I used the years 6 and 7 for the test set. Below, I report the $R^2$, Nash-Sutcliffe Efficiency (NSE), Kling-Gupta Efficiency (KGE), Root Mean-Squared Pearson Residuals (RMSP), predictor-scale RMSE as well as the $p$-values of a Shapiro-Wilk test ($p_{\text{W}}$) and Kolmogorov-Smirnov test ($p_{\text{D}}$) of normality against the Deviance Residuals.
+
+\vspace{3.5cm}
+```{r, echo = FALSE}
+test <- data[data$hydr_year == 6 | data$hydr_year == 7  , ]
+test_xt <- matrix(
+  data = c(
+    test$rain , test$rain*test$PET # train$rain*train$PET,
+  ), ncol = 2, byrow = FALSE
+)
+test_yt <- test$gauge
+oos <- predict_response_GKR(
+  xt = test_xt,
+  yt = test_yt,
+  params = fit$par,
+  configs = configs
+)
+# fitted vs. actual
+fitted <- oos$mu_hat[(1+max(configs$p, configs$q)):length(test_yt)]
+actual <-  test_yt[1:(length(test_yt) - max(configs$p, configs$q))]
+# deviance
+dev_test <- 2 * ( (actual - fitted)/fitted - log(actual/fitted) )
+dev_resd_test <- sign(actual - fitted)*sqrt(dev_test)
+# pearson residuals
+pearson_resid_test <- sqrt(alpha) * (actual - fitted) / fitted
+n_obs    <- length(pearson_resid_test)
+n_par    <- length(fit$par) + 1    
+phi_hat  <- sum(pearson_resid_test^2) / (n_obs - n_par)
+# RMSP
+RMSP <- sqrt(mean(pearson_resid_test^2))
+RMSE <- sqrt(mean((actual - fitted)^2))
+# Shapiro-Wilk Test
+swt <- shapiro.test(dev_resd_test)
+pW <- swt$p.value
+# Kolmogorov-Smirnov Test
+kst <- ks.test(dev_resd_test, "pnorm", mean = 0, sd = 1)
+D <- kst$statistic
+pD <- kst$p.value
+# metrics
+metrics <- data.frame(
+  R2 = 1 - sum((actual - fitted)^2) / sum((actual - mean(actual))^2) ,
+  NSE = hydroGOF::NSE(obs = actual, sim = fitted),
+  KGE = hydroGOF::KGE(obs = actual, sim = fitted),
+  RMSP = sqrt(mean(pearson_resid_test^2)),
+  RMSE = sqrt(mean((actual - fitted)^2)),
+  pW    = swt$p.value,
+  pD  = kst$p.value
+)
+kable(
+  metrics,
+  caption = "Predictive Performance Metrics",
+  col.names =  c("$R^2$", "$\\text{NSE}$", "$\\text{KGE}$", "$\\text{RMSP}$", "$\\text{RMSE}$", "$p_{\\text{W}}$", "$p_{\\text{D}}$"),
+  digits = 3,
+  escape = FALSE
+)
+```
+
+These results show that the predictor-scale performance is good; however, the previous comments about non-normality of residuals still stand.
+:::
+---
+
+### Prediction Plot and Prediction Composition
+::: {style="font-size:60%; line-height:1.2;"}
+Below I include a plot showing the decomposition of $\mu_t = (\mathbf{X} \ast \mathbf{K{}})[t] + \tau_t$ in the test set, as well as a plot of the fitted means against the true response. 
+```{r, echo = FALSE, warning=FALSE, message=FALSE}
+ast_comp <- oos$yt_tilde[(1+max(configs$p, configs$q)):length(test_yt)]
+# prepare data
+df <- data.frame(
+  time = 375:600,
+  tau = (fitted - ast_comp)[375:600],
+  ast = ast_comp[375:600]
+) %>%
+  mutate(mu = tau + ast)
+
+# long format for tau and ytilde (for stacking)
+df_long <- df %>%
+  select(time, tau, ast) %>%
+  pivot_longer(cols = c(tau, ast),
+               names_to = "component",
+               values_to = "value") %>%
+  mutate(component = factor(component, levels = c("tau", "ast")))  
+# plot
+p1t <- ggplot() +
+  geom_area(
+    data = df_long,
+    aes(x = time, y = value, fill = component),
+    position = "stack",
+    alpha = 0.5
+  ) +
+  geom_line(
+    data = df,
+    aes(x = time, y = mu),
+    color = "black",
+    size = 0.7
+  ) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  labs(
+    title = expression("Decomposition of " * mu[t] * " into " * tau[t] * " and Kernel Convolution (X * K)[t]"),
+    x = "Time",
+    y = "Value",
+    fill = "Component"
+  ) +
+  scale_fill_manual(values = c("red", "blue"),
+                    labels = c(expression(tau[t]), "(X * K)[t]")) +
+  theme_bw() + theme(legend.position = "bottom",   
+                         legend.title = element_blank(),
+                     plot.title      = element_text(hjust = 0.5))
+
+# actual vs predicted
+df2 <- data.frame(
+  time = 350:600,
+  actual = actual[350:600],
+  fitted_mean = fitted[350:600]
+)
+p2t <- ggplot(df2, aes(x = time)) +
+  geom_line(aes(y = actual, color = "Actual"),       
+            linetype = "solid", linewidth = 0.5) +
+  geom_line(aes(y = fitted_mean, color = "Fitted"),  
+            linetype = "solid", linewidth = 0.5) +
+  labs(
+    title = "Fitted Mean vs. True Streamflow",
+    x     = "Time",
+    y     = "Streamflow (m3/s)" 
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    plot.title      = element_text(hjust = 0.5)
+  ) +
+  scale_colour_manual(
+    values = c("Actual" = "black", "Fitted" = "tomato")
+  ) +
+  guides(colour = guide_legend(override.aes = list(linetype = c("solid", "dashed"))))
+
+grid.arrange(p1t, p2t, ncol = 2)
+```
+:::
+---
+
+###  Issues with ARMA Estimation
+
+::: {style="font-size:60%; line-height:1.2;"}
+In testing, there have been numerous issues with how we are currently estimating the ARMA error terms. 
+
+Indeed, part of the reason the early-2000s GARMA procedure (which we are currently using) was replaced with the GLARMA method was in the estimation issues. 
+
+There isn't too much of a difference between the models, thankfully. In a GLARMA architecture ([source](https://cran.r-project.org/web/packages/glarma/vignettes/glarma.pdf)), 
+$$
+\mu_t = (\mathbf{X}\ast\mathbf{K})[t]\boldsymbol{\beta} + Z_t
+$$
+Where $Z_t$ is defined with respect to Pearson residuals $e_i$, 
+$$
+Z_t = \sum_{i=1}^p \phi_i (Z_{t-i} + e_{t-i}) + \sum_{i=1}^q \theta_q e_{t-i}, \text{ and } e_t = \frac{y_t - \mu_t}{\mu_t}
+$$
+Consequently, we assume that the mean equation is characterized by the regression with ARMA Pearson errors. In this sense, $Z_t$ is a state-space variable. 
+:::
+
+###  GLARMA as a Redefinition of $\mathcal{A}$ and $\mathcal{M}$
+
+::: {style="font-size:60%; line-height:1.2;"}
+
+:::
+<!-- Ideas - we have GLM framework now.  -->
+<!-- After looking at the entries with higher Pearson + Deviance residuals some of the high resids still happen at spikes -->
+<!-- So, it would require some work (refactoring the code) but we can add a bivariate thresholding term. i.e. B*1[Xt >= C] -->
+<!-- And this is justifiable under GKR's modelling framework and may have hydrological meaning --> 
+<!-- It would have a fixed kernel like in the OLS proof, but have a threshold C and a coef B -->
+<!-- In addition, we can change A(...) and B(...) to be Pearson or Deviance based. -->
+
+<!-- While the new model formulation is promising, it still has issues regarding residual diagnostics. Further, the AR term dominated in our small-scale example, while the predictions from $(\mathbf{X} \ast \mathbf{K})[t]$ remained rather small.  -->
+
+
+<!-- Thankfully there are many ways we can attempt to address this problem. -->
+
+<!-- 1. <span class="fragment">Recall that $\mathcal{A}(\dots)$ and $\mathcal{M}(\dots)$ measure residuals in the *predictor* scale (i.e. $g(y_t)  - \eta_t$). We can modify these functions to measure Pearson Residuals or Deviance Residuals instead. The original GARMA paper mentions using other residual forms for $\mathcal{M}$. </span> -->
+
+<!-- 2. <span class="fragment">In the GKR framework, we can linearly include any number (or transformation of) predictors. This means that we can include a threshold term with or without an associated kernel. </span> -->
+
+<!-- 3. <span class="fragment">We are currently allowing $g(u) = u$, i.e. the identity link. The canonical link for a Gamma-distribution is actually the inverse linke $g(u) = 1/u$. </span> -->
+
+<!-- 4. <span class="fragment">Although we are modelling $\mathbf{y}_T$ as a Gamma distribution to align with hydrology literature, we could conduct additional research to examine what other distributions the stream flow could take. </span> -->
+
+<!-- 5. <span class="fragment">We are currently estimating a unique shape $\hat{\alpha}$ for all $y_t \in \mathbf{y}_T$. We might be better able to model the heteroskedastic effect if we allowed each $y_t$ to have its own shape $\alpha_t$. </span> -->

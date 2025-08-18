@@ -1,0 +1,115 @@
+---
+title: "A Note on Linearity"
+author: "Caden Hewlett"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Previously, we used the Cochrane-Orcutt Procedure with the Sliding Windows Regression (SWR) model given by.
+
+$$
+y_t = \sum_{i = 1}^k \beta^{(i)}(x\ast \kappa^{(i)})[t] + \eta_t
+$$
+Where $\eta_t$ are the uncorrelated errors.
+
+The mathematical justification for the Cochrane-Orcutt procedure is as follows:
+
+$$
+\begin{aligned}
+y_t - \varphi y_{t-1} &= \sum_{i = 1}^k \beta^{(i)}(x\ast \kappa^{(i)})[t] - \varphi\sum_{i = 1}^k \beta^{(i)}(x\ast \kappa^{(i)})[t-1] + \eta_t\\
+&= \sum_{i=1}^k \beta^{(i)} 
+\Big( (x \ast \kappa^{(i)})[t] - \varphi (x \ast \kappa^{(i)})[t-1]  \Big) + \eta_t \\
+&= \sum_{i=1}^k \beta^{(i)} 
+\Big( \sum_{s = 1}^t (x_s - \varphi x_{s-1})\kappa_{t-s}^{(i)}  \Big) + \eta_t 
+\end{aligned}
+$$
+In the SWR paper, it was dictated that the term $x_0 \ast \kappa_t^{(i)}$, originating from index $s = 0$, is ignored. The justification is that the kernel $\kappa^{(i)}$ is padded with zero at the end when being aadjusted to the length of $x_{[t]}$.
+
+Thus, the model can be written as:
+$$
+\breve{y}_t = \sum_{i = 1}^k \beta^{(i)} \cdot \big(\breve{x} \ast  \kappa^{(i)}\big)[t] + \eta_t, \text{ where } \breve{w}_t = w_t - \varphi w_{t-1}
+$$
+
+The question is - can our DKR model be written in a similar transformation?
+
+## Dynamic Kernel Regression Procedure
+
+In a DKR model, we have a somewhat different structure to our estimates $y_t$. Specifically, 
+
+$$
+y_t = \sum_{i= 1}^k \big( \beta_0^{(i)} +  \beta_1^{(i)}(z\ast \kappa^{(i)})[t] \big) \cdot (x\ast \kappa^{(i)})[t] + \eta_t
+$$
+Where $z$ is a modulating variable.
+
+
+The first important thing to note about the DKR fit is that when the primary brackets containing the beta terms are expanded, we arrive at the following:
+
+$$
+y_t = \underbrace{\sum_{i= 1}^k \beta_0^{(i)}(x\ast \kappa^{(i)})[t]}_{\text{Identical to SWR}} + \sum_{i= 1}^k \beta_1^{(i)}(z\ast \kappa^{(i)})[t](x\ast \kappa^{(i)})[t] +\eta_t
+$$
+
+Notice that the first term in the sum is identical to the Sliding Windows Regression model. Thus, when taking the difference $y_t - \varphi y_{t-1}$, this term will not be problematic.
+
+Thus, we focus on the second term and deal with proportionalities.
+$$
+\begin{aligned}
+y_t - \varphi y_{t-1} &\propto \sum_{i= 1}^k \beta_1^{(i)}(z\ast \kappa^{(i)})[t](x\ast \kappa^{(i)})[t] - \varphi\sum_{i= 1}^k \beta_1^{(i)}(z\ast \kappa^{(i)})[t-1](x\ast \kappa^{(i)})[t-1]+\eta_t \\
+&\propto \sum_{i = 1}^k \beta_1^{(i)}\bigg( (z\ast \kappa^{(i)})[t](x\ast \kappa^{(i)})[t] - \varphi (z\ast \kappa^{(i)})[t-1](x\ast \kappa^{(i)})[t-1]\bigg)
+\end{aligned}
+$$
+
+Now, let $Z_t = (z \ast \kappa^{(i)})[t]$ and $X_t = (x \ast \kappa^{(i)})[t]$.
+
+$$
+\begin{aligned}
+y_t - \varphi y_{t-1} &\propto  \sum_{i = 1}^k \beta_1^{(i)}( Z_tX_t  - \varphi Z_{t-1}X_{t-1}) \\
+&\propto  \sum_{i = 1}^k \beta_1^{(i)}( Z_tX_t  \overbrace{ - \varphi X_{t-1}Z_t + \varphi X_{t-1}Z_t}^{\text{Insert terms}} - \varphi Z_{t-1}X_{t-1}) \\
+&\propto  \sum_{i = 1}^k \beta_1^{(i)}\left( Z_t\big( X_t  - \varphi X_{t-1}\big) + \varphi X_{t-1}\big( Z_t - \varphi Z_{t-1}\big)\right) \\
+&\propto  \sum_{i = 1}^k \beta_1^{(i)}\left( Z_t\big( X_t  - \varphi X_{t-1}\big) + \varphi X_{t-1}\big( Z_t - \varphi Z_{t-1}\big)\right) \\
+&\propto  \sum_{i = 1}^k \beta_1^{(i)}\Big( (z \ast \kappa^{(i)})[t] \breve{x}_t + \varphi (x \ast \kappa^{(i)}) \breve{z}_t \Big) \\
+\end{aligned}
+$$
+Which isn't the same simplification as in the 1D case.
+
+## As an Atomic Term
+
+While somewhat unsatisfying, if instead we treat each product term as an inseperable ('atomic') variable ${w}_t$, i.e.
+$$
+w_t^{(i)} = \left( (z\ast \kappa^{(i)})[t](x\ast \kappa^{(i)})\right)[t]
+$$
+Then, our DKR equation becomes:
+$$
+\begin{aligned}
+y_t = {\sum_{i= 1}^k \beta_0^{(i)}(x\ast \kappa^{(i)})[t]}+ \sum_{i= 1}^k \beta_1^{(i)}w_t^{(i)} +\eta_t
+\end{aligned}
+$$
+And the difference is trivially
+$$
+\begin{aligned}
+y_t - \varphi y_{t-1} &= \bigg({\sum_{i= 1}^k \beta_0^{(i)}(x\ast \kappa^{(i)})[t]} - \varphi {\sum_{i= 1}^k \beta_0^{(i)}(x\ast \kappa^{(i)})[t]}\bigg) \\ &\hspace{1.5cm}+ \bigg(\sum_{i= 1}^k \beta_1^{(i)}w_t^{(i)}  - \varphi \sum_{i= 1}^k \beta_1^{(i)}w_t^{(i)}  \bigg) +\eta_t \\
+&=  \sum_{i = 1}^k \beta_0^{(i)} \cdot \big(\breve{x} \ast  \kappa^{(i)}\big)[t] +   \sum_{i = 1}^k \beta_1^{(i)}  \breve{w}^{(i)}_t + \eta_t
+\end{aligned}
+$$
+
+So there really isn't a hope of expressing everything through only $\mathbf{x}_T$ and $\mathbf{z}_T$ due to the nonlinearity, but the above is about as close as we can get. All we have to do is treat each modulating-variable term as an inseperable scalar. 
+
+However, this does allow us to recover the original form of our DKR expression just in terms of the transformation $\breve{g}_t = g_t - \varphi g_{t-1}$, since the simplification above yields
+
+$$
+\breve{y}_t =   \sum_{i = 1}^k \beta_0^{(i)} \cdot \big(\breve{x} \ast  \kappa^{(i)}\big)[t] +   \sum_{i = 1}^k \beta_1^{(i)}  \breve{w}^{(i)}_t + \eta_t
+$$
+
+<!-- y_t = \big(\beta_0 + \beta_1(z \ast k)[t] \big)(x \ast k)[t] \\ y_t - \varphi -->
+<!-- y_{t-1} =  \big(\beta_0 + \beta_1(z \ast k)[t] \big)(x \ast k)[t] - \varphi -->
+<!-- \big(\beta_0 + \beta_1(z \ast k)[t-1] \big)(x \ast k)[t-1] \\ = \beta_0 \big( (x -->
+<!-- \ast k)[t] - (x \ast k)[t-1]\big) + \beta_1 \big( (z \ast k)[t](x \ast k)[t]  - -->
+<!-- \varphi (z \ast k)[t-1](x \ast k)[t-1] \big) \\ \text{ Let } \alpha_n  = (x \ast -->
+<!-- k)[n] - (x \ast k)[n-1] \;\; \& \;\; \gamma_t = (z \ast k)[t](x \ast k)[t]  - -->
+<!-- \varphi (z \ast k)[t-1](x \ast k)[t-1] \\ \text{ Then } y_t - \varphi y_{t-1} = -->
+<!-- \beta_0 \alpha_t + \beta_1 \gamma_t -->
