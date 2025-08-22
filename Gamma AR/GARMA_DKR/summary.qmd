@@ -271,6 +271,9 @@ df %>%
 - OLS log-likelihood and error structure implies that $y_t$ is conditionally normal.
 
 - <span class="fragment">Kernel Parameters are difficult to interpret when $\delta$ is shape and $\sigma$ is scale (easily fixed in reporting.)</span>
+
+
+- <span class="fragment">Model assumes that peaks (flood seasons) and troughs (dry seasons) follow the same process - i.e., no thresholding is modelled. </span>
 :::
 
 ---

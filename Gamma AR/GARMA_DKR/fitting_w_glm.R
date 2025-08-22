@@ -39,10 +39,10 @@ w <- w # / mean(w)
 # rough configs
 configs <- list(k = ncol(xt),
                 kernel_type = c("fixed", "gamma",  "gamma", "gamma", "gamma"),
-                thresholded = c(2),
-                c = 1,
-                q = 1  ,
-                p = 1,
+                thresholded = NULL,
+                c = 0  ,
+                q = 2  ,
+                p = 2,
                 w = w
                 )
 
@@ -196,8 +196,7 @@ fit_GKR <- function(xt, yt, configs){
 
 # --------- TESTING ZONE ------------ #
 fits <- fit_GKR(xt, yt, configs = configs)
-# fitted
-fits$par
+
 betas <- predict_response_GKR(xt = xt,
                             yt = yt,
                             pars = fits$par,
@@ -247,7 +246,6 @@ abline(0, 1)
 configs$nkernel <- configs$k - sum(configs$kernel_type == "fixed")
 
 # 
-acf(y_obs - mu_pred)
 #
 r2 <- 1-sum( (y_obs - mu_pred)^2 ) / sum( (y_obs - mean(mu_pred))^2 )
 nse <- hydroGOF::NSE(sim = mu_pred, obs = y_obs)
@@ -260,10 +258,19 @@ n <- length(y_obs)
 alpha <- fit$par[length(fit$par)]
 
 # deviance residuals
-
+# saveRDS(list(
+#   par = fits$par,
+#   x_train = xt,
+#   y_train = yt,
+#   y_test  = yt_test,
+#   x_test = xt_test,
+#   info = cbind(betas, out$kernel_pars, configs$kernel_type,
+#                ktypes = c("intercept", "rain", "rain", "rain", "temp_kelvin"))
+#   
+# ), here::here("Gamma AR", "GARMA_DKR", "koksilah_full_decent_fit.RData"))
 
 ## ---------- (Randomized) Quantile / PIT residuals ----------
-
+par(mfrow = c(1,2))
 # For continuous Y, randomized and non-randomized are identical:
 pit <- pgamma(y_obs, shape = alpha, scale = mu_pred/alpha)
 eps <- .Machine$double.eps
@@ -298,3 +305,5 @@ for (L in c(10, 20, 30)) {
   lb <- Box.test(innov, lag = L, type = "Ljung-Box", fitdf = 0)
   cat(sprintf("Ljung–Box lag=%d: p=%.3g\n", L, lb$p.value))
 }
+
+
