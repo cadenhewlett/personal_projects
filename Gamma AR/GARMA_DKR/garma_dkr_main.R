@@ -226,7 +226,7 @@ Rcpp::cppFunction('
       for (int j = 0; j < q; ++j) {
         int idx = t - j - 1;
         if (idx >= 0)
-          ma += theta[j] * (y[idx] - mu[idx])/(mu[idx]);
+          ma += theta[j] * (y[idx] - mu[idx])/(mu[idx]) ;
       }
 
       tau[t] = ar + ma;
