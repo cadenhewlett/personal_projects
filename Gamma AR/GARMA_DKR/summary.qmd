@@ -268,12 +268,12 @@ df %>%
 
 - <span class="fragment">Model both admits *and* fits negative values when $y_t \approx 0$.</span> 
 
-- OLS log-likelihood and error structure implies that $y_t$ is conditionally normal.
+- OLS log-likelihood and error structure implies that $y_t$ is conditionally normal, while the data itself is non-negative with a strong right tail.
 
 - <span class="fragment">Kernel Parameters are difficult to interpret when $\delta$ is shape and $\sigma$ is scale (easily fixed in reporting.)</span>
 
 
-- <span class="fragment">Model assumes that peaks (flood seasons) and troughs (dry seasons) follow the same process - i.e., no thresholding is modelled. </span>
+- <span class="fragment">Model assumes that peaks (flood seasons) and troughs (dry seasons) follow the same process - i.e., no thresholding is modeled. </span>
 :::
 
 ---
@@ -1046,10 +1046,91 @@ $$
 Consequently, we assume that the mean equation is characterized by the regression with ARMA Pearson errors. In this sense, $Z_t$ is a state-space variable. 
 :::
 
-###  GLARMA as a Redefinition of $\mathcal{A}$ and $\mathcal{M}$
+###  Generalized Gamma Likelihood
 
 ::: {style="font-size:60%; line-height:1.2;"}
+We have, to this point, assumed a Gamma likelihood on the response $\mathbf{y}_T$ due to the non-negativity of the response (which was not accounted for in previous modelling procedures.) In practice, the heavy tail of the response was not completely captured by a Gamma likelihood. Hence, I considered a **generalized Gamma** distribution ([link](https://en.wikipedia.org/wiki/Generalized_gamma_distribution) on $\mathbf{y}_T$, i.e.
+$$
+f_Y(y_t; \theta, \alpha, \tau) = \dfrac{1}{\Gamma(\alpha / \tau)}\left(\dfrac{\tau}{\theta^\alpha}\right)y_t^{\alpha-1}e^{-(y_t/\theta)^\tau}
+$$
+Where $\theta$ is the scale and $\alpha, \kappa$ are shape parameters. If $\tau = 1$ the above is a regular Gamma distribution.
 
+The mean-paramaterization of the Generalized Gamma is rather direct, as
+$$
+\mathbb{E}(y_t) = \mu_t = \theta \dfrac{\Gamma( (\alpha+1)/\tau )}{\Gamma(\alpha / \tau)}, \text { thus } \theta = \mu_t  \dfrac{\Gamma(\alpha / \tau)}{ \Gamma( (\alpha+1)/\tau )} = \mu_t\, \text{M}
+$$
+Where $\text{M}$ is a constant function of the shape parameters.
+:::
+
+###  Generalized Gamma Likelihood (ctd.)
+
+::: {style="font-size:60%; line-height:1.2;"}
+From the above, the mean-paramaterized Generalized gamma likelihood is given as
+$$
+f_Y(y_t; \mu_t, \alpha, \tau) =  \dfrac{1}{\Gamma(\alpha / \tau)}\left(\dfrac{\tau}{(\mu_t\, \text{M}({\alpha, \tau}))^\alpha}\right)y_t^{\alpha-1}e^{-(y_t/\mu_t\, \text{M}({\alpha, \tau}))^\tau}
+$$
+
+With log-density given by
+$$
+\log\,f_Y(y_t; \mu_t, \alpha, \tau) = \alpha \Big( \log(y_t)-\log (\mu_t) - \log(\text{M})\Big) - \tau \Big( \frac{y_t}{\mu_t \, \text{M}} \Big) - \log(\Gamma(\alpha / \tau)) + \log(\tau), \text { where } \text{M} = \dfrac{\Gamma(\alpha / \tau)}{ \Gamma( (\alpha+1)/\tau )}
+$$
+Which, in `R` we write as:
+```{r}
+# generalized gamma density with mean parameterization
+dggamma_mean <- function(y, mu, alpha, tau, log = FALSE) {
+  # scale implied by mean
+  M <- gamma(alpha/tau) / gamma( (alpha + 1)/tau )
+  const <- mu*M
+  # log pdf (stable)
+  logf <- log(tau) - lgamma(alpha/tau) - alpha*log(const) +
+    (alpha - 1)*log(y) - (y/const)^tau
+  logf[!(y > 0)] <- -Inf
+  if (log) logf else exp(logf)
+}
+```
+:::
+
+
+### Composite Loss Rather than Pure MLE
+
+::: {style="font-size:60%; line-height:1.2;"}
+Under a Generalized Gamma likelihood, the extremes of the data are more permissible. However, due to their rarity and the size of the dataset under pure Maximum Likelihood they are unlikely to be fitted correctly. Consequently, I added a least-squares penalty to the objective function. Letting $\boldsymbol{\Xi} = \{\boldsymbol{\delta}, \boldsymbol{\sigma}, \boldsymbol{\beta}, \boldsymbol{\varphi}, \boldsymbol{\theta}\}$ be the parameter set, 
+$$
+\text{Error}(\boldsymbol{\Xi} \mid \mathcal{F}_{t}) = \ell(\boldsymbol{\Xi}) - \lambda \sum_{t \in T} (y_t - \mu_t)^2
+$$
+Where $\lambda$ is a hyper-parameter to be estimated by grid search or CV. In this instance, our estimated set $\widehat{\boldsymbol{\Xi}}$ is a pseudo-true parameter set that minimizes the expected composite loss.  While it is plausible that an IRLS procedure would function similarly (and is valid under our model given fixed kernel parameters), the base `glm` package doesn't support generalized gamma distributions so we will need to write our own. 
+:::
+
+### Dunn-Smyth Residuals
+
+::: {style="font-size:70%; line-height:1.2;"}
+Since the likelihood on the response is no longer of a simple exponential family, I decided to use Dunn-Smyth residuals instead of Pearson and Deviance. Dunn-Smyth residuals are found by finding the corresponding normal deviate for each residual, i.e.
+$$
+r_{q, i} = \Phi^{-1}\{F(y_i ; \hat{\mu}_i, \hat{\alpha}, \hat{\tau})\}
+$$
+Where $\Phi(\cdot)$ is the CDF of the Standard normal and $F(\cdot)$ is the CDF of the Generalized Gamma distribution. If the model parameters are consistently estimated, $r_{q,i}$ converges to the standard normal distribution [(source)](https://gksmyth.github.io/pubs/residual.pdf). 
+
+In our case, the CDF is given by
+$$
+F(y_t ; {\mu}_i, {\alpha}, {\tau}) = \frac{1}{\Gamma(\alpha / \tau)} \; \gamma \Big(\frac{\alpha}{\tau}, \Big( \frac{y_t}{\mu_t \, \text{M}}\Big)^{\tau} \Big)
+$$
+Where $\gamma(\cdot)$ is the lower incomplete gamma function, and $\text{M}$ is the previously-defined constant function of $\alpha$ and $\tau$.
+```{r}
+# generalized gamma density with mean parameterization
+pggamma_mean <- function(y, mu, alpha, tau, log = FALSE) {
+  # compute const
+  M <- gamma(alpha/tau) / gamma( (alpha + 1)/tau )
+  const <- mu*M
+  # below is equivalent to pgamma(y/const)^tau, alpha/tau, scale=1
+  unname( gammainc( (y/const)^tau, (alpha/tau) )["reginc"] )
+}
+```
+:::
+
+### A Refined GKR Fit
+
+:::{style="font-size:70%; line-height:1.2;"}
+For our experiment, we take the updated likelihood and allow $\mathbf{X} = \begin{bmatrix} \mathbf{1} & \mathbf{x}_T & \mathbf{x}_T & \mathbf{x}_T & \mathbf{x}_T\mathbf{z}_T\end{bmatrix}$. Each $\boldsymbol{\kappa}^{(i)}$ is Gamma-distributed, except for $\boldsymbol{\kappa}^{(1)}$ which is a 'fixed' kernel $\boldsymbol{\kappa}^{(1)} = \langle 1, 0, \dots, 0 \rangle$. This allows for the first coefficient $\beta_1$ to act as an intercept term. For this fit, we allow $p=q=0$ and use the identity link $g(u) = u$.
 :::
 <!-- Ideas - we have GLM framework now.  -->
 <!-- After looking at the entries with higher Pearson + Deviance residuals some of the high resids still happen at spikes -->

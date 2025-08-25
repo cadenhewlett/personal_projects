@@ -42,7 +42,7 @@ configs <- list(k = ncol(xt),
                 thresholded = NULL,
                 c = 0  ,
                 q = 2  ,
-                p = 2,
+                p = 2,  
                 w = w
                 )
 
@@ -94,6 +94,7 @@ predict_response_GKR <- function(xt, yt, pars, configs, betas = NULL){
   if(is.null(betas)){
     # use RCpp QR procedure to estimate betas
     betas <- irls_gamma_identity_qr(X = xt_conv, y = yt, w = configs$w)
+    # TODO
   }
   # then take prod
   mu_fits <- drop(xt_conv %*% betas)
@@ -112,9 +113,9 @@ predict_response_GKR <- function(xt, yt, pars, configs, betas = NULL){
   # GARMA errors
   mu_t <- compute_mu_vec(y = yt, y_tilde = mu_fits, phi, theta)
   # compute alpha
-  alpha <- pars[length(pars)] #compute_shape(yt = yt, mu_t = mu_fits, params = c(betas, pars))
+  alpha <- pars[length(pars)] # TODO
   # get loglik
-  ll <- sum((dmeangamma(
+  ll <- sum((dmeangamma( # TODO
     yt = yt,
     mu = mu_t,
     shape = alpha,

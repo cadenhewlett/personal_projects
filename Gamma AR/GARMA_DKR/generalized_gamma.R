@@ -1,3 +1,6 @@
+source(here::here("Gamma AR", "GARMA_DKR", "garma_dkr_main.R"))
+library(rgenoud)
+set.seed(1928)
 # GENERALIZED GAMMA VERSION
 predict_response_GKR <- function(xt, yt, params, configs) {
   # default config is no AR, no MA
@@ -55,35 +58,36 @@ predict_response_GKR <- function(xt, yt, params, configs) {
     return(list(loglik = -1e10, mu_hat = mu_t))
   }
   #  family parameters
-  kappa <- exp(params[length(params) - 1])
+  alpha <- exp(params[length(params) - 1])
   tau   <- exp(params[length(params)])  
   # compute loglik
-  ll <- sum(dggamma_mean(yt, mu = mu_t, kappa = kappa, tau = tau, log = TRUE))
+  ll <- sum(dggamma_mean(yt, mu = mu_t, alpha = alpha, tau = tau, log = TRUE))
   # return results
   list(
     loglik         = ll,
     mu_hat         = mu_t,
     yt_tilde       = yt_tilde,
     tau_t          = mu_t - yt_tilde,
-    kappa          = kappa,
+    alpha          = alpha,
     tau            = tau,
     kpars          = pars[, c("logdelta", "logsigma")],
     beta           = pars$beta
   )
 }
 
+
 # generalized gamma density with mean parameterization
-dggamma_mean <- function(y, mu, kappa, tau, log = FALSE) {
+dggamma_mean <- function(y, mu, alpha, tau, log = FALSE) {
   # enforce domain; return -Inf if invalid to help optimizers
-  if (any(mu <= 0) || kappa <= 0 || tau <= 0) {
+  if (any(mu <= 0) || alpha <= 0 || tau <= 0) {
     out <- rep(-1e10, length(y)); return(if (log) out else exp(out))
   }
   # scale implied by mean
-  mratio <- gamma((kappa + 1)/tau) / gamma(kappa/tau)   # m(kappa,tau)
-  beta   <- mu / mratio
+  M <- gamma(alpha/tau) / gamma( (alpha + 1)/tau )
+  const <- mu*M
   # log pdf (stable)
-  logf <- log(tau) - lgamma(kappa/tau) - kappa*log(beta) +
-    (kappa - 1)*log(y) - (y/beta)^tau
+  logf <- log(tau) - lgamma(alpha/tau) - alpha*log(const) +
+    (alpha - 1)*log(y) - (y/const)^tau
   logf[!(y > 0)] <- -Inf
   if (log) logf else exp(logf)
 }
@@ -109,7 +113,7 @@ covariates <- c(rep(1, times = nrow(train)),
                 train$rain, 
                 train$rain,
                 train$rain,
-                train$rain*train$temp_kelvin
+                train$temp_kelvin*train$rain
 )
 xt <- matrix(
   data = covariates,
@@ -120,6 +124,9 @@ yt <- train$gauge
 configs$k <- ncol(xt)
 configs$p <- 0
 configs$q <- 0
+configs$kernel_type <- c(
+  "fixed", "gamma", "gamma", "gamma",  "gamma"
+)
 # configure initial values for optimization
 beta_inits <- apply(xt, MARGIN = 2, function(x) {
   mean(yt, na.rm = T) / (2 * mean(x, na.rm = T))
@@ -160,7 +167,7 @@ fit <- genoud(
     if (!is.finite(fit$loglik)) return(1e12)
     # mixed objective: maximize likelihood AND minimize SSE
     sse <- sum((yt - fit$mu_hat)^2)
-    -( fit$loglik - lambda * sse )         # choose lambda by CV
+    -( fit$loglik - lambda * sse ) 
   },
   nvars           = nrow(ranges),
   starting.values = build_inits(n_inits = 100*nrow(ranges), ranges = ranges),
@@ -180,13 +187,13 @@ hydroGOF::KGE(sim = mu_pred, obs = y_obs)
 fit$par
 
 #  family parameters
-kappa <- exp(fit$par[length(fit$par) - 1])
+alpha <- exp(fit$par[length(fit$par) - 1])
 tau   <- exp(fit$par[length(fit$par)])  
 # CDF for GG with mean parameterization
-pggamma_mean <- function(y, mu, kappa, tau){
-  m1 <- gamma((kappa+1)/tau) / gamma(kappa/tau)
+pggamma_mean <- function(y, mu, alpha, tau){
+  m1 <- gamma((alpha+1)/tau) / gamma(alpha/tau)
   beta <- mu / m1
-  pgamma( (y/beta)^tau, shape = kappa/tau, scale = 1 )
+  pgamma( (y/beta)^tau, shape = alpha/tau, scale = 1 )
 }
 
 
@@ -197,7 +204,7 @@ covariates <- c(rep(1, times = nrow(test)),
                 test$rain, 
                 test$rain,
                 test$rain,
-                test$rain*test$temp_kelvin
+                test$temp_kelvin*test$rain
 )
 xt_test <- matrix(
   data = covariates,
@@ -206,18 +213,31 @@ xt_test <- matrix(
 )
 yt_test <- test$gauge
 out_test <- predict_response_GKR(xt = xt_test, yt = yt_test, params = fit$par, configs = configs )
-
+out_test$loglik
 plot(out_test$mu_hat, type = 'l'); lines(yt_test, col = 'red')
 
 hydroGOF::NSE(sim = out_test$mu_hat, obs = yt_test)
-
+hydroGOF::KGE(sim = out_test$mu_hat, obs = yt_test)
+out_test$kernel_pars
 u  <- pggamma_mean(yt_test, out_test$mu_hat, kappa, tau)
 rQ <- qnorm(pmin(pmax(u, .Machine$double.eps), 1 - .Machine$double.eps))
 par(mfrow=c(2,2))
 hist(rQ, breaks=40, main="Dunn–Smyth residuals", xlab="")
-qqnorm(rQ); abline(0,1, col = 'red')
+qqnorm(rQ, col = rgb(0, 0, 0, alpha = 0.3)); abline(0,1, col = 'red')
 plot(y_obs[1:550], type = 'l', main = "Actual (Black) vs. Fitted Mean (Red)"); lines(mu_pred[1:550], col = 'red')
 plot(rQ ~ out_test$mu_hat, cex=.6, main="rQ vs fitted mean");abline(h = 0, col = 'red')
+
+# ------------ dev resd ---------- #
+test$gauge
+sub_test <- yt_test[1:which(is.na(yt_test))[1]-1]
+sub_mus <- out_test$mu_hat[1:which(is.na(yt_test))[1]-1]
+saturated <- dggamma_mean(y = sub_test, mu = sub_test, alpha = alpha, tau = tau, log = TRUE)
+estimated <- dggamma_mean(y = sub_test, mu = sub_mus, alpha = alpha, tau = tau,  log = TRUE)
+# deviance
+deviance <- 2*pmax(0, (saturated - estimated))
+range(deviance)
+rD <- sign(sub_test-sub_mus)*sqrt(deviance)
+qqnorm(rD); abline(0, 1, col = 'red')
 
 # slope & intercept of y on mu (ideal: a=0, b=1)
 # cal <- lm(yt ~ 0 + mu_pred)           # or lm(yt ~ mu_pred)
