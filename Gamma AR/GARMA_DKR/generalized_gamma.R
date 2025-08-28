@@ -113,7 +113,7 @@ covariates <- c(rep(1, times = nrow(train)),
                 train$rain, 
                 train$rain,
                 train$rain,
-                train$temp_kelvin*train$rain
+                train$rain*train$temp_kelvin
 )
 xt <- matrix(
   data = covariates,
@@ -122,8 +122,8 @@ xt <- matrix(
 )
 yt <- train$gauge
 configs$k <- ncol(xt)
-configs$p <- 0
-configs$q <- 0
+configs$p <- 1
+configs$q <- 1 
 configs$kernel_type <- c(
   "fixed", "gamma", "gamma", "gamma",  "gamma"
 )
@@ -158,9 +158,6 @@ R <- rbind(
 ranges <- R
 
 fit <- genoud(
-  # fn = function(par){
-  #   -1*predict_response_GKR(xt = xt, yt = yt, params = par, configs = configs)$loglik
-  # },
   fn = function(par){
     lambda <- 0.25
     fit <- predict_response_GKR(xt, yt, par, configs)
@@ -182,9 +179,9 @@ fit <- genoud(
 mu_pred <- predict_response_GKR(xt, yt, params = fit$par, configs)$mu_hat
 y_obs <- yt
 
-hydroGOF::KGE(sim = mu_pred, obs = y_obs)
+hydroGOF::NSE(sim = mu_pred, obs = y_obs)
 
-fit$par
+
 
 #  family parameters
 alpha <- exp(fit$par[length(fit$par) - 1])
@@ -204,7 +201,7 @@ covariates <- c(rep(1, times = nrow(test)),
                 test$rain, 
                 test$rain,
                 test$rain,
-                test$temp_kelvin*test$rain
+                test$temp_kelvin
 )
 xt_test <- matrix(
   data = covariates,
@@ -213,32 +210,38 @@ xt_test <- matrix(
 )
 yt_test <- test$gauge
 out_test <- predict_response_GKR(xt = xt_test, yt = yt_test, params = fit$par, configs = configs )
-out_test$loglik
+
+fit$par
 plot(out_test$mu_hat, type = 'l'); lines(yt_test, col = 'red')
 
-hydroGOF::NSE(sim = out_test$mu_hat, obs = yt_test)
-hydroGOF::KGE(sim = out_test$mu_hat, obs = yt_test)
+hydroGOF::NSE(sim = out_test$mu_hat[1:(which(is.na(out_test$mu_hat))[1]-1)], 
+              obs = yt_test[1:(which(is.na(out_test$mu_hat))[1]-1)])
+hydroGOF::KGE(sim = out_test$mu_hat[1:(which(is.na(out_test$mu_hat))[1]-1)], 
+              obs = yt_test[1:(which(is.na(out_test$mu_hat))[1]-1)])
 out_test$kernel_pars
-u  <- pggamma_mean(yt_test, out_test$mu_hat, kappa, tau)
+u  <- pggamma_mean(yt_test[1:(which(is.na(out_test$mu_hat))[1]-1)],
+                   out_test$mu_hat[1:(which(is.na(out_test$mu_hat))[1]-1)], kappa, tau)
 rQ <- qnorm(pmin(pmax(u, .Machine$double.eps), 1 - .Machine$double.eps))
 par(mfrow=c(2,2))
 hist(rQ, breaks=40, main="Dunn–Smyth residuals", xlab="")
 qqnorm(rQ, col = rgb(0, 0, 0, alpha = 0.3)); abline(0,1, col = 'red')
-plot(y_obs[1:550], type = 'l', main = "Actual (Black) vs. Fitted Mean (Red)"); lines(mu_pred[1:550], col = 'red')
-plot(rQ ~ out_test$mu_hat, cex=.6, main="rQ vs fitted mean");abline(h = 0, col = 'red')
+plot(y_obs[100:650], type = 'l', main = "Actual (Black) vs. Fitted Mean (Red)"); lines(mu_pred[100:650], col = 'red')
+plot(rQ ~ out_test$mu_hat[1:(which(is.na(out_test$mu_hat))[1]-1)], cex=.6, main="rQ vs fitted mean");abline(h = 0, col = 'red')
 
 # ------------ dev resd ---------- #
-test$gauge
-sub_test <- yt_test[1:which(is.na(yt_test))[1]-1]
-sub_mus <- out_test$mu_hat[1:which(is.na(yt_test))[1]-1]
-saturated <- dggamma_mean(y = sub_test, mu = sub_test, alpha = alpha, tau = tau, log = TRUE)
-estimated <- dggamma_mean(y = sub_test, mu = sub_mus, alpha = alpha, tau = tau,  log = TRUE)
-# deviance
-deviance <- 2*pmax(0, (saturated - estimated))
-range(deviance)
-rD <- sign(sub_test-sub_mus)*sqrt(deviance)
-qqnorm(rD); abline(0, 1, col = 'red')
 
+mod <- list(
+     yt_train = train$gauge,
+     mu_train = mu_pred,
+     xt_train = xt,
+     yt_test = yt_test,
+     mu_test = out_test$mu_hat,
+     xt_test = xt_test,
+     u = u, 
+     rQ = rQ,
+     pars = fit$par,
+     configs = configs)
+saveRDS(mod, here::here("Gamma AR", "GARMA_DKR", "koksilah_ggamma_arma11.RData"))
 # slope & intercept of y on mu (ideal: a=0, b=1)
 # cal <- lm(yt ~ 0 + mu_pred)           # or lm(yt ~ mu_pred)
 # summary(cal)$coef
